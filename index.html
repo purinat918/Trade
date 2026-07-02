@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3-Step AI Trade Tracker (Pro Max)</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #ffffff;
+            --primary: #00e676;
+            --danger: #ff5252;
+            --info: #2196f3;
+            --warning: #ff9800;
+            --purple: #b388ff;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color); color: var(--text-color);
+            padding: 15px; padding-bottom: 50px;
+        }
+
+        h2, h3 { margin-bottom: 15px; text-align: center; }
+
+        /* ปุ่มดูแผนและกฎ */
+        .btn-group { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+        .btn-ref {
+            flex: 1; min-width: 100px; padding: 12px 8px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+            font-size: 13px; color: white; text-align: center;
+        }
+        .btn-plan { background-color: var(--info); }
+        .btn-rules { background-color: var(--warning); }
+        .btn-code { background-color: var(--purple); color: #000; }
+
+        /* ระบบ Tabs */
+        .tabs { display: flex; gap: 5px; margin-bottom: 15px; background: #2a2a2a; padding: 5px; border-radius: 8px; }
+        .tab-btn {
+            flex: 1; padding: 10px; border: none; background: transparent; color: #aaa; 
+            border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold;
+        }
+        .tab-btn.active { background: var(--primary); color: #000; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* การ์ดสถิติ */
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .stat-card { background-color: var(--card-bg); padding: 15px; border-radius: 8px; text-align: center; }
+        .stat-card h4 { font-size: 12px; color: #aaa; margin-bottom: 5px; }
+        .stat-card .value { font-size: 20px; font-weight: bold; }
+
+        /* ฟอร์มบันทึก */
+        .form-card { background-color: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        
+        input, select {
+            width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px;
+            border: 1px solid #333; background-color: #2a2a2a; color: white; font-size: 16px; 
+        }
+        
+        button.submit-btn {
+            width: 100%; padding: 12px; background-color: var(--primary); color: #000;
+            border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer;
+        }
+        button.cancel-btn {
+            width: 100%; padding: 12px; background-color: #555; color: white;
+            border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer;
+            margin-top: 10px; display: none;
+        }
+
+        /* ตารางประวัติ */
+        .history-card { background-color: var(--card-bg); padding: 15px; border-radius: 8px; overflow-x: auto; margin-bottom: 20px;}
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; white-space: nowrap; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #333; font-size: 14px; }
+        th { color: #aaa; }
+        .win-text { color: var(--primary); font-weight: bold; }
+        .loss-text { color: var(--danger); font-weight: bold; }
+        .action-btn { background: transparent; border: none; cursor: pointer; font-size: 16px; margin-right: 5px; }
+
+        /* Modal */
+        .modal {
+            display: none; position: fixed; z-index: 10; left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.8); padding: 20px;
+        }
+        .modal-content {
+            background-color: var(--card-bg); margin: 5% auto; padding: 20px; border-radius: 10px;
+            max-width: 550px; max-height: 85vh; overflow-y: auto; line-height: 1.6;
+        }
+        .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        hr { border: 0; border-top: 1px solid #444; margin: 15px 0; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 8px; font-size: 14px;}
+
+        /* กล่องโชว์โค้ด */
+        .code-box {
+            background: #000; color: #00ff00; padding: 12px; border-radius: 6px;
+            font-family: 'Courier New', Courier, monospace; font-size: 11px;
+            overflow-x: auto; white-space: pre; max-height: 250px; margin-top: 10px;
+            border: 1px solid #333;
+        }
+        .copy-code-btn {
+            width: 100%; padding: 10px; background-color: var(--purple); color: black;
+            border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-bottom: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>📈 บันทึกเทรด "ล่าเงินหมื่น"</h2>
+
+    <div class="btn-group">
+        <button class="btn-ref btn-plan" onclick="openModal('planModal')">📘 แผนการเงิน</button>
+        <button class="btn-ref btn-rules" onclick="openModal('rulesModal')">⚠️ กฎเหล็ก</button>
+        <button class="btn-ref btn-code" onclick="openModal('codeModal')">💻 โค้ด MT5</button>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('tab-entry', this)">📌 บันทึก</button>
+        <button class="tab-btn" onclick="switchTab('tab-monthly', this)">📊 รายเดือน</button>
+        <button class="tab-btn" onclick="switchTab('tab-history', this)">📜 ประวัติรวม</button>
+    </div>
+
+    <div id="tab-entry" class="tab-content active">
+        <div class="dashboard">
+            <div class="stat-card">
+                <h4>กำไรสุทธิ (รวม)</h4>
+                <div class="value" id="netProfit" style="color: white;">0 ฿</div>
+            </div>
+            <div class="stat-card">
+                <h4>Win Rate (รวม)</h4>
+                <div class="value" id="winRate">0%</div>
+            </div>
+        </div>
+
+        <div class="form-card">
+            <h3 id="formTitle">บันทึกไม้เทรด</h3>
+            <input type="date" id="tradeDate" required>
+            <input type="time" id="tradeTime" required>
+            <select id="tradePair">
+                <option value="EURUSD">EURUSD</option>
+                <option value="GBPUSD">GBPUSD</option>
+                <option value="USDJPY">USDJPY</option>
+            </select>
+            <select id="tradeResult">
+                <option value="WIN">✅ ชนะ (WIN)</option>
+                <option value="LOSS">❌ แพ้ (LOSS)</option>
+            </select>
+            <input type="number" id="tradeAmount" placeholder="จำนวนเงิน (บาท) เช่น 30" required>
+            
+            <button class="submit-btn" id="submitBtn" onclick="saveTrade()">บันทึกออเดอร์</button>
+            <button class="cancel-btn" id="cancelBtn" onclick="cancelEdit()">ยกเลิกการแก้ไข</button>
+        </div>
+    </div>
+
+    <div id="tab-monthly" class="tab-content">
+        <div class="history-card">
+            <h3>สรุปผลงานรายเดือน</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>เดือน</th>
+                        <th>จำนวนไม้</th>
+                        <th>Win Rate</th>
+                        <th>P/L สุทธิ</th>
+                    </tr>
+                </thead>
+                <tbody id="monthlyBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tab-history" class="tab-content">
+        <div class="history-card">
+            <h3>ประวัติการเทรดทั้งหมด</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>วัน/เวลา</th>
+                        <th>คู่เงิน</th>
+                        <th>ผลลัพธ์</th>
+                        <th>P/L</th>
+                        <th>จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="planModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('planModal')">&times;</span>
+            <h3 style="color: var(--info);">📘 แผน "1 ปี แตะแสน"</h3>
+            <hr>
+            <ul>
+                <li><strong>เฟส 1: โหมดเร่งเครื่อง (ทุน 350 - 3,500 ฿)</strong><br>🔥 เสี่ยง 10% ต่อไม้</li>
+                <li><strong>เฟส 2: โหมดสโนว์บอล (ทุน 3,500 - 15,000 ฿)</strong><br>🔥 เสี่ยง 5% ต่อไม้</li>
+                <li><strong>เฟส 3: โหมดเดินเครื่อง (ทุน 15,000 - 50,000 ฿)</strong><br>🔥 เสี่ยง 3% ต่อไม้</li>
+                <li><strong>เฟส 4: โหมดสไนเปอร์ (ทุน 50,000 - 100,000 ฿)</strong><br>🔥 เสี่ยง 1-2% ต่อไม้</li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="rulesModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('rulesModal')">&times;</span>
+            <h3 style="color: var(--warning);">⚠️ กฎเหล็กรายวัน (ห้ามแหก!)</h3>
+            <hr>
+            <ul>
+                <li><strong>เวลาทำงาน:</strong> 19:00 - 23:00 น. เท่านั้น</li>
+                <li><strong>นาทีทองคำ:</strong> กดเข้าออเดอร์ให้เสร็จภายใน 30 วินาทีแรก</li>
+                <li><strong>เวลาหมดอายุ:</strong> บวกไปอีก 5 นาทีข้างหน้าเสมอ</li>
+                <li style="color: var(--primary);"><strong>เป้าหมาย (TP):</strong> ชนะเน็ต +3 ไม้ ให้พอทันที!</li>
+                <li style="color: var(--danger);"><strong>หยุดขาดทุน (SL):</strong> แพ้ 2 ไม้ติดกัน ปิดแอปนอนทันที!</li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="codeModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('codeModal')">&times;</span>
+            <h3 style="color: var(--purple);">💻 โค้ดเรดาร์ MT5 (โหมดเร่งโต)</h3>
+            <p style="font-size: 13px; color: #aaa; margin-bottom: 10px;">กดปุ่มด้านล่างเพื่อก๊อปปี้โค้ดทั้งหมดไปใช้วางใน MetaEditor ได้ทันที</p>
+            <button class="copy-code-btn" onclick="copyMT5Code()">📋 ก๊อปปี้โค้ด MT5</button>
+            <div class="code-box" id="mt5CodeText">//+------------------------------------------------------------------+
+//|                                   3Step_Aggressive_Growth.mq5   |
+//+------------------------------------------------------------------+
+#property indicator_chart_window
+#property indicator_buffers 2
+#property indicator_plots   2
+
+#property indicator_label1  "CALL Signal"
+#property indicator_type1   DRAW_ARROW
+#property indicator_color1  clrLimeGreen
+#property indicator_width1  3 
+
+#property indicator_label2  "PUT Signal"
+#property indicator_type2   DRAW_ARROW
+#property indicator_color2  clrRed
+#property indicator_width2  3
+
+input int    InpRSI_Period = 10;      
+input double InpOverbought = 65.0;    
+input double InpOversold   = 35.0;    
+input int    InpStartHour  = 19;      
+input int    InpEndHour    = 23;      
+
+double CallBuffer[];
+double PutBuffer[];
+int rsi_handle;
+datetime last_alert_time = 0;
+
+int OnInit()
+  {
+   SetIndexBuffer(0, CallBuffer, INDICATOR_DATA);
+   PlotIndexSetInteger(0, PLOT_ARROW, 233); 
+   SetIndexBuffer(1, PutBuffer, INDICATOR_DATA);
+   PlotIndexSetInteger(1, PLOT_ARROW, 234); 
+
+   rsi_handle = iRSI(_Symbol, _Period, InpRSI_Period, PRICE_CLOSE);
+   if(rsi_handle == INVALID_HANDLE) return(INIT_FAILED);
+   Comment("\n\n   🔥 โหมดเร่งโตดุดัน (Aggressive) ทำงานแล้ว!\n   [ลูกศรและแจ้งเตือนจะโชว์เฉพาะช่วง 19:00 - 23:00 น. เท่านั้น]\n   สแกนคู่เงิน: ", _Symbol);
+   return(INIT_SUCCEEDED);
+  }
+
+void OnDeinit(const int reason) { Comment(""); }
+
+int OnCalculate(const int rates_total, const int prev_calculated,
+                const datetime &time[], const double &open[],
+                const double &high[], const double &low[],
+                const double &close[], const long &tick_volume[],
+                const long &volume[], const int &spread[])
+  {
+   if(rates_total < 3) return(0);
+   double rsi_buffer[];
+   ArraySetAsSeries(rsi_buffer, true);
+   if(CopyBuffer(rsi_handle, 0, 0, rates_total, rsi_buffer) <= 0) return 0;
+   
+   ArraySetAsSeries(open, true); ArraySetAsSeries(close, true);
+   ArraySetAsSeries(high, true); ArraySetAsSeries(low, true);
+   ArraySetAsSeries(CallBuffer, true); ArraySetAsSeries(PutBuffer, true);
+   ArraySetAsSeries(time, true);
+
+   int limit = rates_total - prev_calculated;
+   if(limit == 0) limit = 1; 
+   if(prev_calculated == 0) {
+      limit = rates_total - 2;
+      ArrayInitialize(CallBuffer, EMPTY_VALUE);
+      ArrayInitialize(PutBuffer, EMPTY_VALUE);
+   }
+
+   MqlDateTime dt;
+   TimeToStruct(TimeLocal(), dt); 
+
+   for(int i = limit; i >= 1; i--) {
+      MqlDateTime bar_dt;
+      TimeToStruct(time[i] + 4*3600, bar_dt); 
+      
+      if(bar_dt.hour < InpStartHour || bar_dt.hour >= InpEndHour) {
+         CallBuffer[i] = EMPTY_VALUE; PutBuffer[i] = EMPTY_VALUE;
+         continue;
+      }
+
+      double body = MathAbs(close[i] - open[i]);
+      double upper_shadow = high[i] - MathMax(open[i], close[i]);
+      double lower_shadow = MathMin(open[i], close[i]) - low[i];
+
+      bool bull_pin = (lower_shadow >= body * 1.5) && (upper_shadow <= body); 
+      bool bear_pin = (upper_shadow >= body * 1.5) && (lower_shadow <= body);
+      bool bull_eng = (close[i+1] < open[i+1]) && (close[i] > open[i]) && (close[i] >= open[i+1]);
+      bool bear_eng = (close[i+1] > open[i+1]) && (close[i] < open[i]) && (close[i] <= open[i+1]);
+
+      bool call_signal = (bull_pin || bull_eng) && (rsi_buffer[i] < InpOversold || rsi_buffer[i+1] < InpOversold);
+      bool put_signal = (bear_pin || bear_eng) && (rsi_buffer[i] > InpOverbought || rsi_buffer[i+1] > InpOverbought);
+
+      if(call_signal) CallBuffer[i] = low[i]; else CallBuffer[i] = EMPTY_VALUE;
+      if(put_signal) PutBuffer[i] = high[i]; else PutBuffer[i] = EMPTY_VALUE;
+   }
+
+   if(dt.hour >= InpStartHour && dt.hour < InpEndHour) {
+      if(time[1] != last_alert_time) {
+         if(CallBuffer[1] != EMPTY_VALUE) {
+            SendNotification("🔥 [ลุยดุดัน] CALL: " + _Symbol + " มาแล้ว!");
+            last_alert_time = time[1];
+         }
+         else if(PutBuffer[1] != EMPTY_VALUE) {
+            SendNotification("🔥 [ลุยดุดัน] PUT: " + _Symbol + " มาแล้ว!");
+            last_alert_time = time[1];
+         }
+      }
+   }
+   return(rates_total);
+  }</div>
+        </div>
+    </div>
+
+    <script>
+        let trades = JSON.parse(localStorage.getItem('trade_history_v2')) || [];
+        let editModeId = null;
+
+        function init() {
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+            const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            document.getElementById('tradeDate').value = dateStr;
+            document.getElementById('tradeTime').value = timeStr;
+            updateUI();
+        }
+
+        function switchTab(tabId, btnElement) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            btnElement.classList.add('active');
+        }
+
+        function updateUI() {
+            renderDashboard();
+            renderHistory();
+            renderMonthly();
+        }
+
+        function renderDashboard() {
+            let win = 0, loss = 0, netProfit = 0;
+            trades.forEach(t => {
+                if(t.result === 'WIN') { win++; netProfit += t.amount; }
+                else { loss++; netProfit -= t.amount; }
+            });
+            const total = win + loss;
+            const winRate = total > 0 ? ((win / total) * 100).toFixed(1) : 0;
+            const profitEl = document.getElementById('netProfit');
+            profitEl.innerText = `${netProfit > 0 ? '+' : ''}${netProfit} ฿`;
+            profitEl.style.color = netProfit > 0 ? '#00e676' : (netProfit < 0 ? '#ff5252' : 'white');
+            document.getElementById('winRate').innerText = `${winRate}%`;
+        }
+
+        function renderHistory() {
+            const tbody = document.getElementById('historyBody');
+            tbody.innerHTML = '';
+            const sortedTrades = [...trades].sort((a, b) => b.id - a.id);
+            sortedTrades.forEach(t => {
+                const tr = document.createElement('tr');
+                const isWin = t.result === 'WIN';
+                const dateParts = t.date.split('-');
+                const shortDate = `${dateParts[2]}/${dateParts[1]}`;
+                tr.innerHTML = `
+                    <td>${shortDate} <span style="color:#aaa; font-size:12px;">${t.time}</span></td>
+                    <td>${t.pair}</td>
+                    <td class="${isWin ? 'win-text' : 'loss-text'}">${isWin ? 'WIN' : 'LOSS'}</td>
+                    <td class="${isWin ? 'win-text' : 'loss-text'}">${isWin ? '+' : '-'}${t.amount}</td>
+                    <td>
+                        <button class="action-btn" onclick="editTrade(${t.id})">✏️</button>
+                        <button class="action-btn" onclick="deleteTrade(${t.id})">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderMonthly() {
+            const tbody = document.getElementById('monthlyBody');
+            tbody.innerHTML = '';
+            const monthlyData = {};
+            trades.forEach(t => {
+                const monthYear = t.date.substring(0, 7);
+                if(!monthlyData[monthYear]) monthlyData[monthYear] = { win: 0, loss: 0, profit: 0 };
+                if(t.result === 'WIN') { monthlyData[monthYear].win++; monthlyData[monthYear].profit += t.amount; }
+                else { monthlyData[monthYear].loss++; monthlyData[monthYear].profit -= t.amount; }
+            });
+            const sortedMonths = Object.keys(monthlyData).sort().reverse();
+            sortedMonths.forEach(month => {
+                const data = monthlyData[month];
+                const total = data.win + data.loss;
+                const winRate = total > 0 ? ((data.win / total) * 100).toFixed(1) : 0;
+                const parts = month.split('-');
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${parts[1]}/${parts[0]}</td>
+                    <td>${total}</td>
+                    <td>${winRate}%</td>
+                    <td style="font-weight:bold; color: ${data.profit > 0 ? '#00e676' : (data.profit < 0 ? '#ff5252' : 'white')}">${data.profit > 0 ? '+' : ''}${data.profit} ฿</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function saveTrade() {
+            const dateVal = document.getElementById('tradeDate').value;
+            const timeVal = document.getElementById('tradeTime').value;
+            const pairVal = document.getElementById('tradePair').value;
+            const resultVal = document.getElementById('tradeResult').value;
+            const amountVal = document.getElementById('tradeAmount').value;
+            if(!amountVal || amountVal <= 0) { alert('กรุณาใส่จำนวนเงินที่ถูกต้อง'); return; }
+
+            if(editModeId) {
+                trades = trades.map(t => t.id === editModeId ? { ...t, date: dateVal, time: timeVal, pair: pairVal, result: resultVal, amount: parseFloat(amountVal) } : t);
+                cancelEdit();
+            } else {
+                trades.push({ id: Date.now(), date: dateVal, time: timeVal, pair: pairVal, result: resultVal, amount: parseFloat(amountVal) });
+                document.getElementById('tradeAmount').value = '';
+            }
+            localStorage.setItem('trade_history_v2', JSON.stringify(trades));
+            updateUI();
+        }
+
+        function deleteTrade(id) {
+            if(confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?')) {
+                trades = trades.filter(t => t.id !== id);
+                localStorage.setItem('trade_history_v2', JSON.stringify(trades));
+                updateUI();
+            }
+        }
+
+        function editTrade(id) {
+            const trade = trades.find(t => t.id === id);
+            if(trade) {
+                editModeId = id;
+                document.getElementById('tradeDate').value = trade.date;
+                document.getElementById('tradeTime').value = trade.time;
+                document.getElementById('tradePair').value = trade.pair;
+                document.getElementById('tradeResult').value = trade.result;
+                document.getElementById('tradeAmount').value = trade.amount;
+                document.getElementById('formTitle').innerText = '✏️ แก้ไขรายการเทรด';
+                document.getElementById('formTitle').style.color = '#ff9800';
+                const submitBtn = document.getElementById('submitBtn');
+                submitBtn.innerText = 'บันทึกการแก้ไข';
+                submitBtn.style.backgroundColor = '#ff9800';
+                document.getElementById('cancelBtn').style.display = 'block';
+                document.querySelector('.tab-btn:nth-child(1)').click();
+                window.scrollTo(0, 0);
+            }
+        }
+
+        function cancelEdit() {
+            editModeId = null;
+            document.getElementById('formTitle').innerText = 'บันทึกไม้เทรด';
+            document.getElementById('formTitle').style.color = 'white';
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerText = 'บันทึกออเดอร์';
+            submitBtn.style.backgroundColor = '#00e676';
+            document.getElementById('cancelBtn').style.display = 'none';
+            document.getElementById('tradeAmount').value = '';
+            init();
+        }
+
+        // ฟังก์ชันก๊อปปี้โค้ดด่วน
+        function copyMT5Code() {
+            const codeText = document.getElementById('mt5CodeText').innerText;
+            navigator.clipboard.writeText(codeText).then(() => {
+                alert('📋 ก๊อปปี้โค้ด MT5 ลงคลิปบอร์ดสำเร็จแล้ว! นำไปวางใน MetaEditor ได้เลย');
+            }).catch(err => {
+                alert('ไม่สามารถก๊อปปี้อัตโนมัติได้ กรุณาคลุมดำคัดลอกในกล่องข้อความแทน');
+            });
+        }
+
+        function openModal(id) { document.getElementById(id).style.display = 'block'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        window.onclick = function(e) { if(e.target.classList.contains('modal')) e.target.style.display = 'none'; }
+
+        init();
+    </script>
+</body>
+</html>
