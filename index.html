@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3-Step AI Trade Tracker (Pro Max)</title>
+    <title>3-Step AI Trade Tracker (Pro Max v2)</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -73,8 +73,8 @@
         /* ตารางประวัติ */
         .history-card { background-color: var(--card-bg); padding: 15px; border-radius: 8px; overflow-x: auto; margin-bottom: 20px;}
         table { width: 100%; border-collapse: collapse; margin-top: 10px; white-space: nowrap; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #333; font-size: 14px; }
-        th { color: #aaa; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #333; font-size: 13px; }
+        th { color: #aaa; background-color: #252525; }
         .win-text { color: var(--primary); font-weight: bold; }
         .loss-text { color: var(--danger); font-weight: bold; }
         .action-btn { background: transparent; border: none; cursor: pointer; font-size: 16px; margin-right: 5px; }
@@ -126,7 +126,7 @@
     <div id="tab-entry" class="tab-content active">
         <div class="dashboard">
             <div class="stat-card">
-                <h4>กำไรสุทธิ (รวม)</h4>
+                <h4>กำไรสะสมรวมทั้งหมด</h4>
                 <div class="value" id="netProfit" style="color: white;">0 ฿</div>
             </div>
             <div class="stat-card">
@@ -157,14 +157,23 @@
 
     <div id="tab-monthly" class="tab-content">
         <div class="history-card">
-            <h3>สรุปผลงานรายเดือน</h3>
+            <h3>สรุปผลงานรายเดือน & แผนปันผล</h3>
+            
+            <div style="margin: 10px 0 20px 0; display: flex; align-items: center; gap: 10px; background: #252525; padding: 10px; border-radius: 6px;">
+                <label style="font-size: 14px; color: #ccc; white-space: nowrap;">💰 ทุนตั้งต้นแรกสุดในพอร์ต:</label>
+                <input type="number" id="initialCapitalInput" value="350" onchange="changeInitialCapital()" style="margin-bottom: 0; padding: 6px; width: 120px; font-size: 14px;">
+                <span style="font-size: 12px; color: #aaa;">(ใช้คำนวณทบต้นเดือนต่อเดือน)</span>
+            </div>
+
             <table>
                 <thead>
                     <tr>
                         <th>เดือน</th>
-                        <th>จำนวนไม้</th>
-                        <th>Win Rate</th>
-                        <th>P/L สุทธิ</th>
+                        <th>ทุนเริ่มเดือน</th>
+                        <th>กำไร/ขาดทุน</th>
+                        <th>ยอดถอน (40%)</th>
+                        <th>จบเดือน (ทบต่อ)</th>
+                        <th> Win Rate (จำนวนไม้)</th>
                     </tr>
                 </thead>
                 <tbody id="monthlyBody"></tbody>
@@ -193,13 +202,17 @@
     <div id="planModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('planModal')">&times;</span>
-            <h3 style="color: var(--info);">📘 แผน "1 ปี แตะแสน"</h3>
+            <h3 style="color: var(--info);">📘 แผน "หมื่นสู่สิบล้าน" (Risk Scaling Roadmap)</h3>
             <hr>
             <ul>
-                <li><strong>เฟส 1: โหมดเร่งเครื่อง (ทุน 350 - 3,500 ฿)</strong><br>🔥 เสี่ยง 10% ต่อไม้</li>
-                <li><strong>เฟส 2: โหมดสโนว์บอล (ทุน 3,500 - 15,000 ฿)</strong><br>🔥 เสี่ยง 5% ต่อไม้</li>
-                <li><strong>เฟส 3: โหมดเดินเครื่อง (ทุน 15,000 - 50,000 ฿)</strong><br>🔥 เสี่ยง 3% ต่อไม้</li>
-                <li><strong>เฟส 4: โหมดสไนเปอร์ (ทุน 50,000 - 100,000 ฿)</strong><br>🔥 เสี่ยง 1-2% ต่อไม้</li>
+                <li><strong>เฟส 1: โหมดเร่งเครื่อง (ทุน 350 - 3,500 ฿)</strong><br>🔥 เสี่ยง 10% ต่อไม้ (เน็ตโตไว พลาดเติมใหม่สู้ต่อ)</li>
+                <li><strong>เฟส 2: โหมดสโนว์บอล (ทุน 3,500 - 15,000 ฿)</strong><br>🔥 เสี่ยง 5% ต่อไม้ (เริ่มสร้างเกราะกำบังให้พอร์ต)</li>
+                <li><strong>เฟส 3: โหมดเดินเครื่อง (ทุน 15,000 - 50,000 ฿)</strong><br>🔥 เสี่ยง 3% ต่อไม้ (ฐานทุนใหญ่ กำไรเริ่มเสถียร)</li>
+                <li><strong>เฟส 4: โหมดสไนเปอร์ (ทุน 50,000 - 100,000 ฿)</strong><br>🔥 เสี่ยง 1-2% ต่อไม้ (เทรดชิล ไร้แรงกดดัน)</li>
+                <li style="color: var(--primary);"><strong>เฟส 5: โหมดอิสระ (ทุน 1 แสน - 5 แสน ฿)</strong><br>💰 เสี่ยง 1% ต่อไม้ <span style="color: #fff; background: #333; padding: 2px 4px; border-radius: 3px;">เริ่มถอนกำไร 40% / ทบพอร์ต 60%</span></li>
+                <li><strong>เฟส 6: โหมดผจก.กองทุน (ทุน 5 แสน - 2 ล้าน ฿)</strong><br>💰 เสี่ยง 0.5-1% ต่อไม้ (ถอนกำไร 50% / ทบพอร์ต 50%)</li>
+                <li><strong>เฟส 7: โหมดวาฬ (ทุน 2 ล้าน - 5 ล้าน ฿)</strong><br>💰 เสี่ยง 0.5% ต่อไม้ (ถอนกำไร 60% ออกไปลงทุนสินทรัพย์อื่น)</li>
+                <li><strong>เฟส 8: โหมดเกษียณ (ทุน 5 ล้าน - 10 ล้าน ฿+)</strong><br>💰 เสี่ยง 0.25-0.5% ต่อไม้ (เน็ตความปลอดภัยสูงสุด กินปันผลยาวๆ)</li>
             </ul>
         </div>
     </div>
@@ -247,6 +260,7 @@ input double InpOverbought = 65.0;
 input double InpOversold   = 35.0;    
 input int    InpStartHour  = 19;      
 input int    InpEndHour    = 23;      
+input int    InpTimeOffset = 4;       
 
 double CallBuffer[];
 double PutBuffer[];
@@ -262,7 +276,7 @@ int OnInit()
 
    rsi_handle = iRSI(_Symbol, _Period, InpRSI_Period, PRICE_CLOSE);
    if(rsi_handle == INVALID_HANDLE) return(INIT_FAILED);
-   Comment("\n\n   🔥 โหมดเร่งโตดุดัน (Aggressive) ทำงานแล้ว!\n   [ลูกศรและแจ้งเตือนจะโชว์เฉพาะช่วง 19:00 - 23:00 น. เท่านั้น]\n   สแกนคู่เงิน: ", _Symbol);
+   Comment("\n\n   🔥 โหมดเร่งโตดุดัน (Aggressive) ทำงานแล้ว!\n   [สแกนช่วงเวลา 19:00 - 23:00 น. | Offset: +", InpTimeOffset, " ชม.]\n   สแกนคู่เงิน: ", _Symbol);
    return(INIT_SUCCEEDED);
   }
 
@@ -297,7 +311,7 @@ int OnCalculate(const int rates_total, const int prev_calculated,
 
    for(int i = limit; i >= 1; i--) {
       MqlDateTime bar_dt;
-      TimeToStruct(time[i] + 4*3600, bar_dt); 
+      TimeToStruct(time[i] + InpTimeOffset*3600, bar_dt); 
       
       if(bar_dt.hour < InpStartHour || bar_dt.hour >= InpEndHour) {
          CallBuffer[i] = EMPTY_VALUE; PutBuffer[i] = EMPTY_VALUE;
@@ -340,6 +354,7 @@ int OnCalculate(const int rates_total, const int prev_calculated,
     <script>
         let trades = JSON.parse(localStorage.getItem('trade_history_v2')) || [];
         let editModeId = null;
+        let initialCapital = parseFloat(localStorage.getItem('initial_capital')) || 350;
 
         function init() {
             const now = new Date();
@@ -347,6 +362,14 @@ int OnCalculate(const int rates_total, const int prev_calculated,
             const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
             document.getElementById('tradeDate').value = dateStr;
             document.getElementById('tradeTime').value = timeStr;
+            document.getElementById('initialCapitalInput').value = initialCapital;
+            updateUI();
+        }
+
+        function changeInitialCapital() {
+            const val = document.getElementById('initialCapitalInput').value;
+            initialCapital = parseFloat(val) || 350;
+            localStorage.setItem('initial_capital', initialCapital);
             updateUI();
         }
 
@@ -372,7 +395,7 @@ int OnCalculate(const int rates_total, const int prev_calculated,
             const total = win + loss;
             const winRate = total > 0 ? ((win / total) * 100).toFixed(1) : 0;
             const profitEl = document.getElementById('netProfit');
-            profitEl.innerText = `${netProfit > 0 ? '+' : ''}${netProfit} ฿`;
+            profitEl.innerText = `${netProfit > 0 ? '+' : ''}${netProfit.toLocaleString('th-TH')} ฿`;
             profitEl.style.color = netProfit > 0 ? '#00e676' : (netProfit < 0 ? '#ff5252' : 'white');
             document.getElementById('winRate').innerText = `${winRate}%`;
         }
@@ -400,28 +423,66 @@ int OnCalculate(const int rates_total, const int prev_calculated,
             });
         }
 
+        // ระบบคำนวณรายเดือนแบบทบต้นข้ามเดือน + คัดแยกยอดถอนปันผลเมื่อทุนแตะแสน
         function renderMonthly() {
             const tbody = document.getElementById('monthlyBody');
             tbody.innerHTML = '';
+
             const monthlyData = {};
             trades.forEach(t => {
-                const monthYear = t.date.substring(0, 7);
+                const monthYear = t.date.substring(0, 7); // YYYY-MM
                 if(!monthlyData[monthYear]) monthlyData[monthYear] = { win: 0, loss: 0, profit: 0 };
                 if(t.result === 'WIN') { monthlyData[monthYear].win++; monthlyData[monthYear].profit += t.amount; }
                 else { monthlyData[monthYear].loss++; monthlyData[monthYear].profit -= t.amount; }
             });
-            const sortedMonths = Object.keys(monthlyData).sort().reverse();
-            sortedMonths.forEach(month => {
+
+            // เรียงเดือนจากเก่าสุดไปใหม่สุด เพื่อคำนวณเงินทบข้ามเดือนให้ถูกต้องตามเส้นเวลา
+            const sortedMonthsAsc = Object.keys(monthlyData).sort();
+
+            let runningBalance = initialCapital;
+            const monthlyRecords = [];
+
+            sortedMonthsAsc.forEach(month => {
                 const data = monthlyData[month];
+                const startBal = runningBalance;
+                const netProfit = data.profit;
+                
+                let withdrawal = 0;
+                // เงื่อนไข: ถ้าทุนเริ่มเดือนถึงเป้า 100,000 บาท และเดือนนั้นมีกำไร ให้คำนวณยอดถอน 40%
+                if (startBal >= 100000 && netProfit > 0) {
+                    withdrawal = netProfit * 0.40;
+                }
+                
+                const reinvestedProfit = netProfit - withdrawal;
+                const endBal = startBal + reinvestedProfit;
+                
                 const total = data.win + data.loss;
                 const winRate = total > 0 ? ((data.win / total) * 100).toFixed(1) : 0;
-                const parts = month.split('-');
+
+                monthlyRecords.push({
+                    month, startBal, netProfit, withdrawal, endBal, total, winRate
+                });
+
+                runningBalance = endBal; // ส่งยอดจบเดือนนี้ไปเป็นทุนเริ่มเดือนถัดไป
+            });
+
+            // กลับด้านรายการเพื่อให้เดือนล่าสุดแสดงอยู่บนสุดของตาราง ดูง่ายขึ้น
+            monthlyRecords.reverse().forEach(r => {
+                const parts = r.month.split('-');
+                const monthDisplay = `${parts[1]}/${parts[0]}`;
                 const tr = document.createElement('tr');
+                
                 tr.innerHTML = `
-                    <td>${parts[1]}/${parts[0]}</td>
-                    <td>${total}</td>
-                    <td>${winRate}%</td>
-                    <td style="font-weight:bold; color: ${data.profit > 0 ? '#00e676' : (data.profit < 0 ? '#ff5252' : 'white')}">${data.profit > 0 ? '+' : ''}${data.profit} ฿</td>
+                    <td><strong>${monthDisplay}</strong></td>
+                    <td>${r.startBal.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ฿</td>
+                    <td style="font-weight:bold; color: ${r.netProfit > 0 ? '#00e676' : (r.netProfit < 0 ? '#ff5252' : 'white')}">
+                        ${r.netProfit > 0 ? '+' : ''}${r.netProfit.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ฿
+                    </td>
+                    <td style="font-weight:bold; color: ${r.withdrawal > 0 ? 'var(--purple)' : '#777'}">
+                        ${r.withdrawal > 0 ? '💸 ' + r.withdrawal.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ฿' : '-'}
+                    </td>
+                    <td style="font-weight:bold; color: var(--info);">${r.endBal.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ฿</td>
+                    <td>${r.winRate}% (${r.total} ไม้)</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -486,7 +547,6 @@ int OnCalculate(const int rates_total, const int prev_calculated,
             init();
         }
 
-        // ฟังก์ชันก๊อปปี้โค้ดด่วน
         function copyMT5Code() {
             const codeText = document.getElementById('mt5CodeText').innerText;
             navigator.clipboard.writeText(codeText).then(() => {
