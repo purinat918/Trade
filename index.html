@@ -150,6 +150,25 @@
             font-family: 'Courier New', Courier, monospace; font-size: 12px;
             overflow-x: auto; white-space: pre; max-height: 250px; margin-top: 10px; border: 1px solid #334155;
         }
+        /* รูปแบบตารางเฉพาะมือถือ (เปลี่ยนแถวเป็นการ์ด) */
+        @media (max-width: 600px) {
+            .resp-table thead { display: none; }
+            .resp-table tr { 
+                display: block; margin-bottom: 15px; padding: 12px; 
+                background: var(--bg-color); border-radius: 12px; 
+                border: 1px solid var(--border-color);
+            }
+            .resp-table td { 
+                display: flex; justify-content: space-between; align-items: center;
+                padding: 8px 0; border-bottom: 1px dashed var(--border-color); 
+                font-size: 14px; text-align: right; border-left: none;
+            }
+            .resp-table td:last-child { border-bottom: none; font-size: 16px; color: var(--info); font-weight: bold; }
+            .resp-table td::before { 
+                content: attr(data-label); font-weight: 700; 
+                color: var(--text-muted); text-align: left;
+            }
+        }
     </style>
 </head>
 <body>
@@ -163,6 +182,7 @@
         <button class="btn-ref btn-plan" onclick="openModal('planModal')">📘 แผนการเงิน</button>
         <button class="btn-ref btn-rules" onclick="openModal('rulesModal')">⚠️ กฎเหล็ก</button>
         <button class="btn-ref btn-code" onclick="openModal('codeModal')">💻 โค้ด MT5</button>
+        <button class="btn-ref" onclick="openModal('roadmapModal')" style="background-color: var(--primary); color: #fff;">🚀 เป้าหมาย 6 ปี</button>
     </div>
 
     <div class="tabs">
@@ -435,7 +455,30 @@ int OnCalculate(const int rates_total, const int prev_calculated,
   }</div>
         </div>
     </div>
-
+<div id="roadmapModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="close-btn" onclick="closeModal('roadmapModal')">&times;</span>
+            <h3 style="color: var(--primary);">🚀 แผน 6 ปี</h3>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">จำลองการเติบโตแบบทบต้น (เพิ่มทุนเดือนละ 350 บาท)</p>
+            
+            <div style="max-height: 60vh; overflow-y: auto;">
+                <table class="resp-table" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>เดือนที่</th>
+                            <th>ทุนเริ่มเดือน</th>
+                            <th>เฟสความเสี่ยง</th>
+                            <th>กำไรโดยประมาณ</th>
+                            <th>ถอนปันผล</th>
+                            <th>ยกไป (ทบต้น)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="roadmapTableBody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
     <script>
         let trades = JSON.parse(localStorage.getItem('trade_history_v2')) || [];
         let deposits = JSON.parse(localStorage.getItem('monthly_deposits_v2')) || {};
@@ -462,6 +505,8 @@ int OnCalculate(const int rates_total, const int prev_calculated,
             document.getElementById('themeToggle').innerText = '☀️ โหมดสว่าง';
         }
 
+        // --- เริ่มต้นโค้ดที่เอามาวางแทนที่ ---
+
         function init() {
             const now = new Date();
             const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
@@ -469,8 +514,57 @@ int OnCalculate(const int rates_total, const int prev_calculated,
             document.getElementById('tradeDate').value = dateStr;
             document.getElementById('tradeTime').value = timeStr;
             document.getElementById('initialCapitalInput').value = initialCapital;
+            
+            generateRoadmap6Years(); // เรียกใช้ฟังก์ชันตาราง 6 ปีตอนเปิดเว็บ
             updateUI();
         }
+
+        // ฟังก์ชันจำลองตาราง 6 ปีแบบอัตโนมัติ 
+        function generateRoadmap6Years() {
+            const tbody = document.getElementById('roadmapTableBody');
+            if(!tbody) return; // กัน Error ถ้าหาตารางไม่เจอ
+            tbody.innerHTML = '';
+            
+            let balance = 0;
+            const monthlyAdd = 350;
+
+            for (let m = 1; m <= 72; m++) {
+                let startBal = balance + monthlyAdd;
+                let phase, riskText, mult, withdrawRate = 0;
+
+                // เช็คเฟสและอัตรากำไรต่อเดือนตามสถิติ
+                if (startBal < 3500) { phase = 1; riskText = '10%'; mult = 0.50; }
+                else if (startBal < 15000) { phase = 2; riskText = '5%'; mult = 0.40; }
+                else if (startBal < 50000) { phase = 3; riskText = '3%'; mult = 0.30; }
+                else if (startBal < 100000) { phase = 4; riskText = '1.5%'; mult = 0.20; }
+                else if (startBal < 500000) { phase = 5; riskText = '1%'; mult = 0.15; withdrawRate = 0.40; }
+                else if (startBal < 2000000) { phase = 6; riskText = '0.75%'; mult = 0.10; withdrawRate = 0.50; }
+                else { phase = 7; riskText = '0.5%'; mult = 0.07; withdrawRate = 0.60; }
+
+                let profit = Math.floor(startBal * mult);
+                let withdraw = withdrawRate > 0 ? Math.floor(profit * withdrawRate) : 0;
+                let endBal = startBal + profit - withdraw;
+                
+                let year = Math.ceil(m / 12);
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td data-label="เดือนที่ (ปี)">${m} (ปี ${year})</td>
+                    <td data-label="ทุนเริ่มเดือน">${startBal.toLocaleString('th-TH')} ฿</td>
+                    <td data-label="สถานะ">เฟส ${phase} (${riskText})</td>
+                    <td data-label="กำไรสุทธิ" style="color: var(--primary); font-weight: bold;">+${profit.toLocaleString('th-TH')} ฿</td>
+                    <td data-label="ยอดถอนใช้" style="color: var(--purple);">
+                        ${withdraw > 0 ? '💸 ' + withdraw.toLocaleString('th-TH') + ' ฿' : '-'}
+                    </td>
+                    <td data-label="ยอดทบต้นยกไป">${endBal.toLocaleString('th-TH')} ฿</td>
+                `;
+                tbody.appendChild(tr);
+                
+                balance = endBal; 
+            }
+        }
+
+        // --- สิ้นสุดโค้ดที่เอามาวางแทนที่ ---
 
         function changeInitialCapital() {
             const val = document.getElementById('initialCapitalInput').value;
