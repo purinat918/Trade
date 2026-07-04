@@ -170,12 +170,26 @@
                 <input type="number" id="initialCapitalInput" value="350" onchange="changeInitialCapital()" style="margin-bottom: 0; padding: 6px; width: 120px; font-size: 14px;">
                 <span style="font-size: 12px; color: #aaa;">(ใช้คำนวณทบต้นเดือนต่อเดือน)</span>
             </div>
-
+            <!-- ระบบบันทึกเงินเติมรายเดือน -->
+            <div style="margin: 10px 0 20px 0; background: #252525; padding: 15px; border-radius: 6px; border: 1px dashed #555; position: relative;">
+                <h4 style="margin-bottom: 10px; color: var(--info);">📥 เติมเงินเข้าพอร์ต (รายเดือน)</h4>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                    <input type="month" id="depositMonth" style="width: auto; margin-bottom: 0; padding: 8px; font-size: 16px;">
+                    <input type="number" id="depositAmount" placeholder="ยอดเงิน (ใส่ 0 เพื่อลบ)" style="width: 170px; margin-bottom: 0; padding: 8px; font-size: 16px;">
+                    <button onclick="saveDeposit()" style="padding: 9px 15px; background: var(--info); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;">บันทึก</button>
+                </div>
+                <div style="margin-top: 12px; font-size: 13px; color: #ccc; border-top: 1px solid #333; padding-top: 10px;">
+                    💼 <strong style="color: white;">ยอดทุนส่วนตัวสะสมทั้งหมด: </strong> 
+                    <span id="totalCapitalDisplay" style="color: var(--primary); font-weight: bold; font-size: 15px;">0 ฿</span>
+                    <span style="font-size: 12px; color: #888;" id="totalCapitalBreakdown"> (ทุนแรกเริ่ม 0 + เติมเพิ่ม 0)</span>
+                </div>
+            </div>
             <table>
                 <thead>
                     <tr>
                         <th>เดือน</th>
                         <th>ทุนเริ่มเดือน</th>
+                        <th>เงินเติมเพิ่ม</th>
                         <th>กำไร/ขาดทุน</th>
                         <th>ยอดถอน (40%)</th>
                         <th>จบเดือน (ทบต่อ)</th>
@@ -266,7 +280,7 @@ input double InpOverbought = 65.0;
 input double InpOversold   = 35.0;    
 input int    InpStartHour  = 19;      
 input int    InpEndHour    = 23;      
-input int    InpTimeOffset = 4;       
+input int    InpTimeOffset = 4;       // ⏱️ เพิ่มเมนูตั้งค่าบวกเวลาตรงนี้
 
 double CallBuffer[];
 double PutBuffer[];
@@ -282,6 +296,8 @@ int OnInit()
 
    rsi_handle = iRSI(_Symbol, _Period, InpRSI_Period, PRICE_CLOSE);
    if(rsi_handle == INVALID_HANDLE) return(INIT_FAILED);
+   
+   // แสดงข้อความว่าชดเชยเวลาไปกี่ชั่วโมงบนหน้ากราฟด้วย
    Comment("\n\n   🔥 โหมดเร่งโตดุดัน (Aggressive) ทำงานแล้ว!\n   [สแกนช่วงเวลา 19:00 - 23:00 น. | Offset: +", InpTimeOffset, " ชม.]\n   สแกนคู่เงิน: ", _Symbol);
    return(INIT_SUCCEEDED);
   }
@@ -317,6 +333,8 @@ int OnCalculate(const int rates_total, const int prev_calculated,
 
    for(int i = limit; i >= 1; i--) {
       MqlDateTime bar_dt;
+      
+      // 💡 เปลี่ยนมาใช้ตัวแปร InpTimeOffset ทำให้ปรับเปลี่ยนหน้ากราฟได้เลย
       TimeToStruct(time[i] + InpTimeOffset*3600, bar_dt); 
       
       if(bar_dt.hour < InpStartHour || bar_dt.hour >= InpEndHour) {
@@ -361,6 +379,7 @@ int OnCalculate(const int rates_total, const int prev_calculated,
         let trades = JSON.parse(localStorage.getItem('trade_history_v2')) || [];
         let editModeId = null;
         let initialCapital = parseFloat(localStorage.getItem('initial_capital')) || 350;
+        let deposits = JSON.parse(localStorage.getItem('monthly_deposits_v2')) || {};
 
         function init() {
             const now = new Date();
@@ -450,11 +469,14 @@ int OnCalculate(const int rates_total, const int prev_calculated,
 
             sortedMonthsAsc.forEach(month => {
                 const data = monthlyData[month];
-                const startBal = runningBalance;
+                
+                // ดึงยอดเงินที่เติมในเดือนนี้ (ถ้ามี) มาบวกเพิ่มในทุนเริ่มเดือน
+                const monthDeposit = deposits[month] || 0;
+                const startBal = runningBalance + monthDeposit;
+
                 const netProfit = data.profit;
                 
                 let withdrawal = 0;
-                // เงื่อนไข: ถ้าทุนเริ่มเดือนถึงเป้า 100,000 บาท และเดือนนั้นมีกำไร ให้คำนวณยอดถอน 40%
                 if (startBal >= 100000 && netProfit > 0) {
                     withdrawal = netProfit * 0.40;
                 }
@@ -466,13 +488,22 @@ int OnCalculate(const int rates_total, const int prev_calculated,
                 const winRate = total > 0 ? ((data.win / total) * 100).toFixed(1) : 0;
 
                 monthlyRecords.push({
-                    month, startBal, netProfit, withdrawal, endBal, total, winRate
+                    month, startBal, monthDeposit, netProfit, withdrawal, endBal, total, winRate
                 });
 
-                runningBalance = endBal; // ส่งยอดจบเดือนนี้ไปเป็นทุนเริ่มเดือนถัดไป
+                runningBalance = endBal; 
             });
 
-            // กลับด้านรายการเพื่อให้เดือนล่าสุดแสดงอยู่บนสุดของตาราง ดูง่ายขึ้น
+            // สร้างแถวตาราง (อัปเดตให้มีคอลัมน์เงินเติม)
+            // คำนวณยอดทุนสะสมทั้งหมดเพื่อแสดงผล
+            let totalAdded = 0;
+            for (let m in deposits) { totalAdded += deposits[m]; }
+            let grandTotalCapital = initialCapital + totalAdded;
+            
+            document.getElementById('totalCapitalDisplay').innerText = grandTotalCapital.toLocaleString('th-TH') + ' ฿';
+            document.getElementById('totalCapitalBreakdown').innerText = ` (แรกเริ่ม ${initialCapital.toLocaleString('th-TH')} ฿ + เติมเพิ่ม ${totalAdded.toLocaleString('th-TH')} ฿)`;
+
+            // สร้างแถวตาราง (เพิ่มปุ่มดินสอ ✏️ สำหรับแก้ไข)
             monthlyRecords.reverse().forEach(r => {
                 const parts = r.month.split('-');
                 const monthDisplay = `${parts[1]}/${parts[0]}`;
@@ -481,6 +512,11 @@ int OnCalculate(const int rates_total, const int prev_calculated,
                 tr.innerHTML = `
                     <td><strong>${monthDisplay}</strong></td>
                     <td>${r.startBal.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ฿</td>
+                    <td style="color: var(--warning); font-weight: bold;">
+                        ${r.monthDeposit > 0 
+                            ? '+' + r.monthDeposit.toLocaleString('th-TH') + ' ฿ <span onclick="editDeposit(\'' + r.month + '\')" style="cursor:pointer; font-size:14px; opacity:0.8; margin-left:5px;" title="คลิกเพื่อแก้ไข">✏️</span>' 
+                            : '- <span onclick="editDeposit(\'' + r.month + '\')" style="cursor:pointer; font-size:14px; opacity:0.3; margin-left:5px;" title="คลิกเพื่อเพิ่มยอด">✏️</span>'}
+                    </td>
                     <td style="font-weight:bold; color: ${r.netProfit > 0 ? '#00e676' : (r.netProfit < 0 ? '#ff5252' : 'white')}">
                         ${r.netProfit > 0 ? '+' : ''}${r.netProfit.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ฿
                     </td>
@@ -552,7 +588,34 @@ int OnCalculate(const int rates_total, const int prev_calculated,
             document.getElementById('tradeAmount').value = '';
             init();
         }
+        function saveDeposit() {
+            const monthVal = document.getElementById('depositMonth').value; 
+            const amountVal = parseFloat(document.getElementById('depositAmount').value);
+            
+            if(!monthVal) { alert('กรุณาเลือกเดือน'); return; }
+            if(isNaN(amountVal) || amountVal < 0) { alert('กรุณาใส่จำนวนเงินที่ถูกต้อง'); return; }
+            
+            if (amountVal === 0) {
+                // ถ้ากรอก 0 ให้ลบข้อมูลเดือนนั้นทิ้งไปเลย
+                delete deposits[monthVal];
+                alert(`ลบยอดเติมเงินของเดือน ${monthVal} เรียบร้อยแล้ว`);
+            } else {
+                deposits[monthVal] = amountVal;
+                alert(`บันทึกยอดเติมเงิน ${amountVal} ฿ สำหรับเดือน ${monthVal} สำเร็จ!`);
+            }
+            
+            localStorage.setItem('monthly_deposits_v2', JSON.stringify(deposits));
+            document.getElementById('depositAmount').value = '';
+            updateUI();
+        }
 
+        // ฟังก์ชันดึงข้อมูลกลับมาแก้ไข
+        function editDeposit(monthKey) {
+            document.getElementById('depositMonth').value = monthKey;
+            document.getElementById('depositAmount').value = deposits[monthKey] || '';
+            document.getElementById('depositAmount').focus();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
         function copyMT5Code() {
             const codeText = document.getElementById('mt5CodeText').innerText;
             navigator.clipboard.writeText(codeText).then(() => {
