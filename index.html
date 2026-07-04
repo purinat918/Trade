@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3-Step AI Trade Tracker (Premium Edition)</title>
+    <title>บันทึกการเทรด</title>
+    <!-- โลโก้สำหรับหน้าจอโฮมของ iOS (iPhone/iPad) -->
+  <link rel="apple-touch-icon" href="trade.png">
+  
+  <!-- โลโก้สำหรับแท็บเบราว์เซอร์และ Android (Favicon) -->
+  <link rel="icon" type="image/png" sizes="192x192" href="trade.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="trade.png">
     <style>
         /* ระบบตัวแปรสีอัจฉริยะ (Theme Variables) */
         :root {
@@ -172,16 +178,16 @@
         /* แก้บั๊กกล่อง Date/Time เพี้ยนบนมือถือ (iOS/Safari) */
         input[type="date"], 
         input[type="time"] {
-            -webkit-appearance: none; /* ล้างค่าสไตล์บังคับของระบบมือถือ */
-            appearance: none;
-            text-align: left; /* บังคับตัวหนังสือชิดซ้ายให้ตรงกับกล่องอื่น */
-            background-color: var(--bg-color); /* ดูดสีพื้นหลังให้กลืนกับแอป */
-            min-height: 50.4px; /* ล็อกความสูงให้พอดีกับกล่อง Dropdown */
-            font-family: inherit; /* ใช้ฟอนต์เดียวกันทั้งแอป */
+            -webkit-appearance: none !important;
+            appearance: none !important;
+            text-align: left !important;
+            background-color: var(--bg-color) !important;
+            min-height: 50.4px;
+            font-family: inherit;
             align-items: center;
+            width: 100%;
         }
 
-        /* จัดตำแหน่งข้อความด้านในไม่ให้ลอยหรือจม */
         input[type="date"]::-webkit-datetime-edit, 
         input[type="time"]::-webkit-datetime-edit {
             display: block;
