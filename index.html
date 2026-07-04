@@ -4,12 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3-Step AI Trade Tracker (Premium Edition)</title>
-    <!-- โลโก้สำหรับหน้าจอโฮมของ iOS (iPhone/iPad) -->
-  <link rel="apple-touch-icon" href="trade.png">
-  
-  <!-- โลโก้สำหรับแท็บเบราว์เซอร์และ Android (Favicon) -->
-  <link rel="icon" type="image/png" sizes="192x192" href="trade.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="trade.png">
     <style>
         /* ระบบตัวแปรสีอัจฉริยะ (Theme Variables) */
         :root {
@@ -175,26 +169,6 @@
                 color: var(--text-muted); text-align: left;
             }
         }
-        /* แก้บั๊กกล่อง Date/Time เพี้ยนบนมือถือ (iOS/Safari) */
-        input[type="date"], 
-        input[type="time"] {
-            -webkit-appearance: none; /* ล้างค่าสไตล์บังคับของระบบมือถือ */
-            appearance: none;
-            text-align: left; /* บังคับตัวหนังสือชิดซ้ายให้ตรงกับกล่องอื่น */
-            background-color: var(--bg-color); /* ดูดสีพื้นหลังให้กลืนกับแอป */
-            min-height: 50.4px; /* ล็อกความสูงให้พอดีกับกล่อง Dropdown */
-            font-family: inherit; /* ใช้ฟอนต์เดียวกันทั้งแอป */
-            align-items: center;
-        }
-
-        /* จัดตำแหน่งข้อความด้านในไม่ให้ลอยหรือจม */
-        input[type="date"]::-webkit-datetime-edit, 
-        input[type="time"]::-webkit-datetime-edit {
-            display: block;
-            padding: 0;
-            margin: 0;
-            line-height: 1.2;
-        }
     </style>
 </head>
 <body>
@@ -289,7 +263,7 @@
             </div>
 
             <div class="table-responsive">
-                <table>
+                <table class="resp-table">
                     <thead>
                         <tr>
                             <th>เดือน</th>
@@ -764,21 +738,22 @@ int OnCalculate(const int rates_total, const int prev_calculated,
                 const monthDisplay = `${parts[1]}/${parts[0]}`;
                 const tr = document.createElement('tr');
                 
+                // (วางทับโค้ด tr.innerHTML เดิมในฟังก์ชัน renderMonthly)
                 tr.innerHTML = `
-                    <td><strong>${monthDisplay}</strong></td>
-                    <td>${r.startBal.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ฿</td>
-                    <td style="color: var(--warning); font-weight: bold;">
+                    <td data-label="เดือน"><strong>${monthDisplay}</strong></td>
+                    <td data-label="ทุนเริ่มเดือน">${r.startBal.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ฿</td>
+                    <td data-label="เงินเติมเพิ่ม" style="color: var(--warning); font-weight: bold;">
                         ${r.monthDeposit > 0 
-                            ? '+' + r.monthDeposit.toLocaleString('th-TH') + ' <span onclick="editDeposit(\'' + r.month + '\')" style="cursor:pointer; font-size:14px; opacity:0.8; margin-left:3px;" title="แก้ไขยอดเติม">✏️</span>' 
+                            ? '+' + r.monthDeposit.toLocaleString('th-TH') + ' ฿ <span onclick="editDeposit(\'' + r.month + '\')" style="cursor:pointer; font-size:14px; opacity:0.8; margin-left:3px;" title="แก้ไขยอดเติม">✏️</span>' 
                             : '- <span onclick="editDeposit(\'' + r.month + '\')" style="cursor:pointer; font-size:14px; opacity:0.3; margin-left:3px;" title="เพิ่มยอดเติม">✏️</span>'}
                     </td>
-                    <td style="font-weight:bold; color: ${r.netProfit > 0 ? 'var(--primary)' : (r.netProfit < 0 ? 'var(--danger)' : 'var(--text-color)')}">
+                    <td data-label="กำไร/ขาดทุน" style="font-weight:bold; color: ${r.netProfit > 0 ? 'var(--primary)' : (r.netProfit < 0 ? 'var(--danger)' : 'var(--text-color)')}">
                         ${r.netProfit > 0 ? '+' : ''}${r.netProfit.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ฿
                     </td>
-                    <td style="font-weight:bold; color: ${r.withdrawal > 0 ? 'var(--purple)' : 'var(--text-muted)'}">
+                    <td data-label="ยอดถอน (40%)" style="font-weight:bold; color: ${r.withdrawal > 0 ? 'var(--purple)' : 'var(--text-muted)'}">
                         ${r.withdrawal > 0 ? '💸 ' + r.withdrawal.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ฿' : '-'}
                     </td>
-                    <td style="font-weight:bold; color: var(--info);">${r.endBal.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ฿</td>
+                    <td data-label="จบเดือน (ทบต่อ)" style="font-weight:bold; color: var(--info);">${r.endBal.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ฿</td>
                 `;
                 tbody.appendChild(tr);
             });
