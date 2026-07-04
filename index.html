@@ -169,6 +169,26 @@
                 color: var(--text-muted); text-align: left;
             }
         }
+        /* แก้บั๊กกล่อง Date/Time เพี้ยนบนมือถือ (iOS/Safari) */
+        input[type="date"], 
+        input[type="time"] {
+            -webkit-appearance: none; /* ล้างค่าสไตล์บังคับของระบบมือถือ */
+            appearance: none;
+            text-align: left; /* บังคับตัวหนังสือชิดซ้ายให้ตรงกับกล่องอื่น */
+            background-color: var(--bg-color); /* ดูดสีพื้นหลังให้กลืนกับแอป */
+            min-height: 50.4px; /* ล็อกความสูงให้พอดีกับกล่อง Dropdown */
+            font-family: inherit; /* ใช้ฟอนต์เดียวกันทั้งแอป */
+            align-items: center;
+        }
+
+        /* จัดตำแหน่งข้อความด้านในไม่ให้ลอยหรือจม */
+        input[type="date"]::-webkit-datetime-edit, 
+        input[type="time"]::-webkit-datetime-edit {
+            display: block;
+            padding: 0;
+            margin: 0;
+            line-height: 1.2;
+        }
     </style>
 </head>
 <body>
