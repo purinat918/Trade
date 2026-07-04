@@ -3,119 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3-Step AI Trade Tracker (Pro Max v2)</title>
-    <!-- โลโก้สำหรับหน้าจอโฮมของ iOS (iPhone/iPad) -->
-  <link rel="apple-touch-icon" href="trade.png">
-  
-  <!-- โลโก้สำหรับแท็บเบราว์เซอร์และ Android (Favicon) -->
-  <link rel="icon" type="image/png" sizes="192x192" href="trade.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="trade.png">
+    <title>3-Step AI Trade Tracker (Premium Edition)</title>
     <style>
+        /* ระบบตัวแปรสีอัจฉริยะ (Theme Variables) */
         :root {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --text-color: #ffffff;
-            --primary: #00e676;
+            /* โหมดสว่าง (Light Mode) */
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+            --text-muted: #7f8c8d;
+            --border-color: #e2e8f0;
+            --primary: #00c853;
+            --primary-gradient: linear-gradient(135deg, #00e676, #00c853);
             --danger: #ff5252;
             --info: #2196f3;
-            --warning: #ff9800;
-            --purple: #b388ff;
+            --warning: #f39c12;
+            --purple: #8c9eff;
+            --shadow: 0 10px 20px rgba(0,0,0,0.05);
+            --card-radius: 16px;
+            --btn-radius: 12px;
         }
-        
+
+        [data-theme="dark"] {
+            /* โหมดมืด (Dark Mode) */
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --primary: #00e676;
+            --primary-gradient: linear-gradient(135deg, #00e676, #00b0ff);
+            --danger: #ff5252;
+            --info: #3b82f6;
+            --warning: #f59e0b;
+            --purple: #a78bfa;
+            --shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color); color: var(--text-color);
-            padding: 15px; padding-bottom: 50px;
+            background-color: var(--bg-color); 
+            color: var(--text-color);
+            padding: 15px; 
+            padding-bottom: 50px;
+            transition: background-color 0.4s ease, color 0.4s ease; /* เอฟเฟกต์เปลี่ยนโหมดนุ่มนวล */
         }
 
-        h2, h3 { margin-bottom: 15px; text-align: center; }
+        /* ส่วนหัวและปุ่มสลับโหมด */
+        .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header-container h2 { font-size: 22px; font-weight: 800; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .theme-btn {
+            background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color);
+            padding: 8px 15px; border-radius: 20px; font-size: 14px; cursor: pointer;
+            box-shadow: var(--shadow); transition: all 0.3s ease; font-weight: 600;
+        }
+        .theme-btn:hover { transform: translateY(-2px); }
 
         /* ปุ่มดูแผนและกฎ */
-        .btn-group { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+        .btn-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
         .btn-ref {
-            flex: 1; min-width: 100px; padding: 12px 8px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
-            font-size: 13px; color: white; text-align: center;
+            flex: 1; min-width: 100px; padding: 12px 10px; border: none; border-radius: var(--btn-radius); font-weight: 700; cursor: pointer;
+            font-size: 14px; color: white; text-align: center; box-shadow: var(--shadow); transition: transform 0.2s;
         }
+        .btn-ref:active { transform: scale(0.95); }
         .btn-plan { background-color: var(--info); }
         .btn-rules { background-color: var(--warning); }
-        .btn-code { background-color: var(--purple); color: #000; }
+        .btn-code { background-color: var(--purple); color: #fff; }
 
         /* ระบบ Tabs */
-        .tabs { display: flex; gap: 5px; margin-bottom: 15px; background: #2a2a2a; padding: 5px; border-radius: 8px; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; background: var(--border-color); padding: 6px; border-radius: 14px; }
         .tab-btn {
-            flex: 1; padding: 10px; border: none; background: transparent; color: #aaa; 
-            border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold;
+            flex: 1; padding: 12px; border: none; background: transparent; color: var(--text-muted); 
+            border-radius: 10px; cursor: pointer; font-size: 15px; font-weight: 700; transition: all 0.3s;
         }
-        .tab-btn.active { background: var(--primary); color: #000; }
-        .tab-content { display: none; }
+        .tab-btn.active { background: var(--card-bg); color: var(--text-color); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .tab-content { display: none; animation: fadeIn 0.4s; }
         .tab-content.active { display: block; }
 
-        /* การ์ดสถิติ */
-        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .stat-card { background-color: var(--card-bg); padding: 15px; border-radius: 8px; text-align: center; }
-        .stat-card h4 { font-size: 12px; color: #aaa; margin-bottom: 5px; }
-        .stat-card .value { font-size: 20px; font-weight: bold; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* ฟอร์มบันทึก */
-        .form-card { background-color: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-        
-        input, select {
-            width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px;
-            border: 1px solid #333; background-color: #2a2a2a; color: white; font-size: 16px; 
+        /* การ์ดและ UI หลัก */
+        .luxury-card { 
+            background-color: var(--card-bg); padding: 20px; border-radius: var(--card-radius); 
+            box-shadow: var(--shadow); margin-bottom: 20px; border: 1px solid var(--border-color);
+            transition: all 0.4s ease;
         }
+        
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .stat-card { background-color: var(--card-bg); padding: 20px; border-radius: var(--card-radius); text-align: center; box-shadow: var(--shadow); border: 1px solid var(--border-color); }
+        .stat-card h4 { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-card .value { font-size: 24px; font-weight: 800; }
+
+        /* ⚠️ Anti-Zoom สำหรับมือถือ ⚠️ */
+        input, select {
+            width: 100%; padding: 14px; margin-bottom: 15px; border-radius: var(--btn-radius);
+            border: 1px solid var(--border-color); background-color: var(--bg-color); color: var(--text-color); 
+            font-size: 16px !important; /* บังคับ 16px เพื่อไม่ให้มือถือซูมจอ */
+            outline: none; transition: border-color 0.3s;
+        }
+        input:focus, select:focus { border-color: var(--primary); }
         
         button.submit-btn {
-            width: 100%; padding: 12px; background-color: var(--primary); color: #000;
-            border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer;
+            width: 100%; padding: 14px; background: var(--primary-gradient); color: #fff;
+            border: none; border-radius: var(--btn-radius); font-size: 16px; font-weight: 800; cursor: pointer;
+            box-shadow: 0 6px 15px rgba(0, 230, 118, 0.3); transition: all 0.3s;
         }
+        button.submit-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 230, 118, 0.4); }
+        
         button.cancel-btn {
-            width: 100%; padding: 12px; background-color: #555; color: white;
-            border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer;
-            margin-top: 10px; display: none;
+            width: 100%; padding: 14px; background-color: var(--text-muted); color: white;
+            border: none; border-radius: var(--btn-radius); font-size: 16px; font-weight: bold; cursor: pointer;
+            margin-top: 12px; display: none;
         }
 
         /* ตารางประวัติ */
-        .history-card { background-color: var(--card-bg); padding: 15px; border-radius: 8px; overflow-x: auto; margin-bottom: 20px;}
+        .table-responsive { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; white-space: nowrap; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #333; font-size: 13px; }
-        th { color: #aaa; background-color: #252525; }
-        .win-text { color: var(--primary); font-weight: bold; }
-        .loss-text { color: var(--danger); font-weight: bold; }
-        .action-btn { background: transparent; border: none; cursor: pointer; font-size: 16px; margin-right: 5px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 14px; }
+        th { color: var(--text-muted); font-weight: 700; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
+        .win-text { color: var(--primary); font-weight: 800; }
+        .loss-text { color: var(--danger); font-weight: 800; }
+        .action-btn { background: transparent; border: none; cursor: pointer; font-size: 16px; margin-right: 8px; transition: transform 0.2s; }
+        .action-btn:hover { transform: scale(1.2); }
 
         /* Modal */
         .modal {
-            display: none; position: fixed; z-index: 10; left: 0; top: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.8); padding: 20px;
+            display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.6); backdrop-filter: blur(5px); padding: 20px;
         }
         .modal-content {
-            background-color: var(--card-bg); margin: 5% auto; padding: 20px; border-radius: 10px;
-            max-width: 550px; max-height: 85vh; overflow-y: auto; line-height: 1.6;
+            background-color: var(--card-bg); margin: 10% auto; padding: 25px; border-radius: var(--card-radius);
+            max-width: 550px; max-height: 80vh; overflow-y: auto; line-height: 1.6; border: 1px solid var(--border-color);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2); animation: fadeIn 0.3s;
         }
-        .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
-        hr { border: 0; border-top: 1px solid #444; margin: 15px 0; }
+        .close-btn { color: var(--text-muted); float: right; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1; }
+        hr { border: 0; border-top: 1px solid var(--border-color); margin: 15px 0; }
         ul { padding-left: 20px; }
-        li { margin-bottom: 8px; font-size: 14px;}
+        li { margin-bottom: 10px; font-size: 14px;}
 
         /* กล่องโชว์โค้ด */
         .code-box {
-            background: #000; color: #00ff00; padding: 12px; border-radius: 6px;
-            font-family: 'Courier New', Courier, monospace; font-size: 11px;
-            overflow-x: auto; white-space: pre; max-height: 250px; margin-top: 10px;
-            border: 1px solid #333;
-        }
-        .copy-code-btn {
-            width: 100%; padding: 10px; background-color: var(--purple); color: black;
-            border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-bottom: 10px;
-            font-size: 14px;
+            background: #0f172a; color: #10b981; padding: 15px; border-radius: var(--btn-radius);
+            font-family: 'Courier New', Courier, monospace; font-size: 12px;
+            overflow-x: auto; white-space: pre; max-height: 250px; margin-top: 10px; border: 1px solid #334155;
         }
     </style>
 </head>
 <body>
 
-    <h2>📈 บันทึกเทรด "ล่าเงินหมื่น"</h2>
+    <div class="header-container">
+        <h2>Pro</h2>
+        <button class="theme-btn" id="themeToggle" onclick="toggleTheme()">🌙 โหมดมืด</button>
+    </div>
 
     <div class="btn-group">
         <button class="btn-ref btn-plan" onclick="openModal('planModal')">📘 แผนการเงิน</button>
@@ -126,23 +168,37 @@
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('tab-entry', this)">📌 บันทึก</button>
         <button class="tab-btn" onclick="switchTab('tab-monthly', this)">📊 รายเดือน</button>
-        <button class="tab-btn" onclick="switchTab('tab-history', this)">📜 ประวัติรวม</button>
+        <button class="tab-btn" onclick="switchTab('tab-history', this)">📜 ประวัติ</button>
     </div>
 
     <div id="tab-entry" class="tab-content active">
         <div class="dashboard">
             <div class="stat-card">
-                <h4>กำไรสะสมรวมทั้งหมด</h4>
-                <div class="value" id="netProfit" style="color: white;">0 ฿</div>
+                <h4>กำไรสะสมรวม</h4>
+                <div class="value" id="netProfit" style="color: var(--text-color);">0 ฿</div>
             </div>
             <div class="stat-card">
-                <h4>Win Rate (รวม)</h4>
-                <div class="value" id="winRate">0%</div>
+                <h4>Win Rate</h4>
+                <div class="value" id="winRate" style="color: var(--info);">0%</div>
+            </div>
+            <!-- นำโค้ดนี้ไปวางต่อท้ายกล่อง Win Rate ภายใน div class="dashboard" -->
+            <div class="stat-card" style="grid-column: 1 / -1; background: var(--primary-gradient); color: #fff; border: none; box-shadow: 0 10px 20px rgba(0, 230, 118, 0.2);">
+                <h4 style="color: rgba(255,255,255,0.9); margin-bottom: 12px; font-size: 14px; text-align: left;">🎯 แผนเทรดสำหรับวันนี้ (คำนวณอัตโนมัติ)</h4>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div style="text-align: left;">
+                        <div style="font-size: 14px; font-weight: 600;" id="currentPhaseText">วิเคราะห์ข้อมูล...</div>
+                        <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">พอร์ตปัจจุบัน: <span id="currentBalanceText">0</span> ฿</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 12px; opacity: 0.9; margin-bottom: 2px;">ขนาดไม้ที่ต้องกด</div>
+                        <div class="value" id="todayTradeAmount" style="font-size: 28px; line-height: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">0 ฿</div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="form-card">
-            <h3 id="formTitle">บันทึกไม้เทรด</h3>
+        <div class="luxury-card">
+            <h3 id="formTitle" style="margin-bottom: 15px; text-align: center;">บันทึกไม้เทรด</h3>
             <input type="date" id="tradeDate" required>
             <input type="time" id="tradeTime" required>
             <select id="tradePair">
@@ -162,77 +218,82 @@
     </div>
 
     <div id="tab-monthly" class="tab-content">
-        <div class="history-card">
-            <h3>สรุปผลงานรายเดือน & แผนปันผล</h3>
+        <div class="luxury-card">
+            <h3 style="margin-bottom: 20px;">สรุปผลงาน & แผนปันผล</h3>
             
-            <div style="margin: 10px 0 20px 0; display: flex; align-items: center; gap: 10px; background: #252525; padding: 10px; border-radius: 6px;">
-                <label style="font-size: 14px; color: #ccc; white-space: nowrap;">💰 ทุนตั้งต้นแรกสุดในพอร์ต:</label>
-                <input type="number" id="initialCapitalInput" value="350" onchange="changeInitialCapital()" style="margin-bottom: 0; padding: 6px; width: 120px; font-size: 14px;">
-                <span style="font-size: 12px; color: #aaa;">(ใช้คำนวณทบต้นเดือนต่อเดือน)</span>
-            </div>
-            <!-- ระบบบันทึกเงินเติมรายเดือน -->
-            <div style="margin: 10px 0 20px 0; background: #252525; padding: 15px; border-radius: 6px; border: 1px dashed #555; position: relative;">
-                <h4 style="margin-bottom: 10px; color: var(--info);">📥 เติมเงินเข้าพอร์ต (รายเดือน)</h4>
+            <div style="margin: 10px 0 20px 0; background: var(--bg-color); padding: 18px; border-radius: var(--btn-radius); border: 2px dashed var(--border-color); position: relative;">
+                <h4 style="margin-bottom: 15px; color: var(--info);">📥 จัดการเงินทุน</h4>
+                
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                    <label style="font-size: 14px; font-weight: 600;">ทุนแรกเริ่ม:</label>
+                    <input type="number" id="initialCapitalInput" value="350" onchange="changeInitialCapital()" style="width: 120px; margin-bottom: 0; padding: 10px; font-size: 16px !important;">
+                </div>
+
                 <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-                    <input type="month" id="depositMonth" style="width: auto; margin-bottom: 0; padding: 8px; font-size: 16px;">
-                    <input type="number" id="depositAmount" placeholder="ยอดเงิน (ใส่ 0 เพื่อลบ)" style="width: 170px; margin-bottom: 0; padding: 8px; font-size: 16px;">
-                    <button onclick="saveDeposit()" style="padding: 9px 15px; background: var(--info); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;">บันทึก</button>
+                    <input type="month" id="depositMonth" style="width: auto; margin-bottom: 0; padding: 10px; font-size: 16px !important;">
+                    <input type="number" id="depositAmount" placeholder="ยอดเติมเพิ่ม (฿)" style="width: 140px; margin-bottom: 0; padding: 10px; font-size: 16px !important;">
+                    <button onclick="saveDeposit()" style="padding: 10px 15px; background: var(--info); color: white; border: none; border-radius: var(--btn-radius); cursor: pointer; font-weight: bold; font-size: 14px; box-shadow: 0 4px 10px rgba(33, 150, 243, 0.3);">บันทึกยอด</button>
                 </div>
-                <div style="margin-top: 12px; font-size: 13px; color: #ccc; border-top: 1px solid #333; padding-top: 10px;">
-                    💼 <strong style="color: white;">ยอดทุนส่วนตัวสะสมทั้งหมด: </strong> 
-                    <span id="totalCapitalDisplay" style="color: var(--primary); font-weight: bold; font-size: 15px;">0 ฿</span>
-                    <span style="font-size: 12px; color: #888;" id="totalCapitalBreakdown"> (ทุนแรกเริ่ม 0 + เติมเพิ่ม 0)</span>
+                
+                <div style="margin-top: 15px; font-size: 14px; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 12px;">
+                    💼 <strong>ยอดทุนส่วนตัวสะสมทั้งหมด: </strong> 
+                    <span id="totalCapitalDisplay" style="color: var(--primary); font-weight: 800; font-size: 18px;">0 ฿</span>
+                    <span style="font-size: 12px;" id="totalCapitalBreakdown"> (ทุนแรกเริ่ม 0 + เติมเพิ่ม 0)</span>
                 </div>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>เดือน</th>
-                        <th>ทุนเริ่มเดือน</th>
-                        <th>เงินเติมเพิ่ม</th>
-                        <th>กำไร/ขาดทุน</th>
-                        <th>ยอดถอน (40%)</th>
-                        <th>จบเดือน (ทบต่อ)</th>
-                        <th> Win Rate (จำนวนไม้)</th>
-                    </tr>
-                </thead>
-                <tbody id="monthlyBody"></tbody>
-            </table>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>เดือน</th>
+                            <th>ทุนเริ่มเดือน</th>
+                            <th>เงินเติมเพิ่ม</th>
+                            <th>กำไร/ขาดทุน</th>
+                            <th>ยอดถอน (40%)</th>
+                            <th>จบเดือน (ทบต่อ)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthlyBody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <div id="tab-history" class="tab-content">
-        <div class="history-card">
-            <h3>ประวัติการเทรดทั้งหมด</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>วัน/เวลา</th>
-                        <th>คู่เงิน</th>
-                        <th>ผลลัพธ์</th>
-                        <th>P/L</th>
-                        <th>จัดการ</th>
-                    </tr>
-                </thead>
-                <tbody id="historyBody"></tbody>
-            </table>
+        <div class="luxury-card">
+            <h3 style="margin-bottom: 15px;">ประวัติการเทรดทั้งหมด</h3>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>วัน/เวลา</th>
+                            <th>คู่เงิน</th>
+                            <th>ผลลัพธ์</th>
+                            <th>P/L</th>
+                            <th>จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <div id="planModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('planModal')">&times;</span>
-            <h3 style="color: var(--info);">📘 แผน "หมื่นสู่สิบล้าน" (Risk Scaling Roadmap)</h3>
+            <h3 style="color: var(--info);">📘 แผน "การเทรดที่ดี" (Risk Roadmap)</h3>
             <hr>
             <ul>
-                <li><strong>เฟส 1: โหมดเร่งเครื่อง (ทุน 350 - 3,500 ฿)</strong><br>🔥 เสี่ยง 10% ต่อไม้ (เน็ตโตไว พลาดเติมใหม่สู้ต่อ)</li>
-                <li><strong>เฟส 2: โหมดสโนว์บอล (ทุน 3,500 - 15,000 ฿)</strong><br>🔥 เสี่ยง 5% ต่อไม้ (เริ่มสร้างเกราะกำบังให้พอร์ต)</li>
-                <li><strong>เฟส 3: โหมดเดินเครื่อง (ทุน 15,000 - 50,000 ฿)</strong><br>🔥 เสี่ยง 3% ต่อไม้ (ฐานทุนใหญ่ กำไรเริ่มเสถียร)</li>
-                <li><strong>เฟส 4: โหมดสไนเปอร์ (ทุน 50,000 - 100,000 ฿)</strong><br>🔥 เสี่ยง 1-2% ต่อไม้ (เทรดชิล ไร้แรงกดดัน)</li>
-                <li style="color: var(--primary);"><strong>เฟส 5: โหมดอิสระ (ทุน 1 แสน - 5 แสน ฿)</strong><br>💰 เสี่ยง 1% ต่อไม้ <span style="color: #fff; background: #333; padding: 2px 4px; border-radius: 3px;">เริ่มถอนกำไร 40% / ทบพอร์ต 60%</span></li>
-                <li><strong>เฟส 6: โหมดผจก.กองทุน (ทุน 5 แสน - 2 ล้าน ฿)</strong><br>💰 เสี่ยง 0.5-1% ต่อไม้ (ถอนกำไร 50% / ทบพอร์ต 50%)</li>
-                <li><strong>เฟส 7: โหมดวาฬ (ทุน 2 ล้าน - 5 ล้าน ฿)</strong><br>💰 เสี่ยง 0.5% ต่อไม้ (ถอนกำไร 60% ออกไปลงทุนสินทรัพย์อื่น)</li>
-                <li><strong>เฟส 8: โหมดเกษียณ (ทุน 5 ล้าน - 10 ล้าน ฿+)</strong><br>💰 เสี่ยง 0.25-0.5% ต่อไม้ (เน็ตความปลอดภัยสูงสุด กินปันผลยาวๆ)</li>
+                <li><strong>เฟส 1: โหมดเร่งเครื่อง (ทุน 350 - 3,500 ฿)</strong><br>🔥 เสี่ยง 10% ต่อไม้</li>
+                <li><strong>เฟส 2: โหมดสโนว์บอล (ทุน 3,500 - 15,000 ฿)</strong><br>🔥 เสี่ยง 5% ต่อไม้</li>
+                <li><strong>เฟส 3: โหมดเดินเครื่อง (ทุน 15,000 - 50,000 ฿)</strong><br>🔥 เสี่ยง 3% ต่อไม้</li>
+                <li><strong>เฟส 4: โหมดสไนเปอร์ (ทุน 50,000 - 100,000 ฿)</strong><br>🔥 เสี่ยง 1-2% ต่อไม้</li>
+                <li style="color: var(--primary);"><strong>เฟส 5: โหมดอิสระ (ทุน 1 แสน - 5 แสน ฿)</strong><br>💰 เสี่ยง 1% (ถอนกำไร 40% / ทบ 60%)</li>
+                <li><strong>เฟส 6: โหมดผจก.กองทุน (ทุน 5 แสน - 2 ล้าน ฿)</strong><br>💰 เสี่ยง 0.5-1% (ถอน 50% / ทบ 50%)</li>
+                <li><strong>เฟส 7: โหมดวาฬ (ทุน 2 ล้าน - 5 ล้าน ฿)</strong><br>💰 เสี่ยง 0.5% (ถอน 60% ลงทุนอื่น)</li>
+                <li><strong>เฟส 8: โหมดเกษียณ (ทุน 5 ล้าน - 10 ล้าน ฿+)</strong><br>💰 เสี่ยง 0.25-0.5% (เทรดชิลๆ กินปันผล)</li>
             </ul>
         </div>
     </div>
@@ -255,9 +316,9 @@
     <div id="codeModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('codeModal')">&times;</span>
-            <h3 style="color: var(--purple);">💻 โค้ดเรดาร์ MT5 (โหมดเร่งโต)</h3>
-            <p style="font-size: 13px; color: #aaa; margin-bottom: 10px;">กดปุ่มด้านล่างเพื่อก๊อปปี้โค้ดทั้งหมดไปใช้วางใน MetaEditor ได้ทันที</p>
-            <button class="copy-code-btn" onclick="copyMT5Code()">📋 ก๊อปปี้โค้ด MT5</button>
+            <h3 style="color: var(--purple);">💻 โค้ดเรดาร์ MT5</h3>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">กดปุ่มด้านล่างเพื่อก๊อปปี้โค้ดทั้งหมดไปใช้วางใน MetaEditor</p>
+            <button onclick="copyMT5Code()" style="width: 100%; padding: 12px; background: var(--purple); color: #fff; border: none; border-radius: var(--btn-radius); font-weight: bold; cursor: pointer; margin-bottom: 10px;">📋 ก๊อปปี้โค้ด</button>
             <div class="code-box" id="mt5CodeText">//+------------------------------------------------------------------+
 //|                                   3Step_Aggressive_Growth.mq5   |
 //+------------------------------------------------------------------+
@@ -377,9 +438,29 @@ int OnCalculate(const int rates_total, const int prev_calculated,
 
     <script>
         let trades = JSON.parse(localStorage.getItem('trade_history_v2')) || [];
+        let deposits = JSON.parse(localStorage.getItem('monthly_deposits_v2')) || {};
         let editModeId = null;
         let initialCapital = parseFloat(localStorage.getItem('initial_capital')) || 350;
-        let deposits = JSON.parse(localStorage.getItem('monthly_deposits_v2')) || {};
+
+        // ระบบ Dark/Light Mode
+        function toggleTheme() {
+            const body = document.documentElement;
+            if(body.getAttribute('data-theme') === 'dark') {
+                body.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+                document.getElementById('themeToggle').innerText = '🌙 โหมดมืด';
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                document.getElementById('themeToggle').innerText = '☀️ โหมดสว่าง';
+            }
+        }
+        
+        // เช็ค Theme เริ่มต้นตอนเปิดเว็บ
+        if(localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.getElementById('themeToggle').innerText = '☀️ โหมดสว่าง';
+        }
 
         function init() {
             const now = new Date();
@@ -410,7 +491,7 @@ int OnCalculate(const int rates_total, const int prev_calculated,
             renderHistory();
             renderMonthly();
         }
-
+        
         function renderDashboard() {
             let win = 0, loss = 0, netProfit = 0;
             trades.forEach(t => {
@@ -421,8 +502,75 @@ int OnCalculate(const int rates_total, const int prev_calculated,
             const winRate = total > 0 ? ((win / total) * 100).toFixed(1) : 0;
             const profitEl = document.getElementById('netProfit');
             profitEl.innerText = `${netProfit > 0 ? '+' : ''}${netProfit.toLocaleString('th-TH')} ฿`;
-            profitEl.style.color = netProfit > 0 ? '#00e676' : (netProfit < 0 ? '#ff5252' : 'white');
+            
+            // ใช้ CSS variables เพื่อให้สีเข้ากับทุกโหมด
+            if (netProfit > 0) profitEl.style.color = 'var(--primary)';
+            else if (netProfit < 0) profitEl.style.color = 'var(--danger)';
+            else profitEl.style.color = 'var(--text-color)';
+            
             document.getElementById('winRate').innerText = `${winRate}%`;
+            // --- โค้ดที่ต้องเพิ่ม: คำนวณพอร์ตปัจจุบันและไม้เทรดอัตโนมัติ (แก้ไข: ล็อกเป้ารายวัน) ---
+            
+            // 1. หาวันที่ปัจจุบัน (วันนี้) เพื่อแยกคำนวณ
+            const nowDash = new Date();
+            const todayStr = `${nowDash.getFullYear()}-${String(nowDash.getMonth()+1).padStart(2,'0')}-${String(nowDash.getDate()).padStart(2,'0')}`;
+
+            let totalWithdrawal = 0;
+            let profitBeforeToday = 0; // ตัวแปรเก็บกำไร/ขาดทุนสะสม "ก่อน" ถึงวันนี้
+            const monthlyDataDashboard = {};
+            
+            trades.forEach(t => {
+                const mYear = t.date.substring(0, 7);
+                if(!monthlyDataDashboard[mYear]) monthlyDataDashboard[mYear] = 0;
+                
+                if(t.result === 'WIN') {
+                    monthlyDataDashboard[mYear] += t.amount;
+                    if(t.date < todayStr) profitBeforeToday += t.amount;
+                } else {
+                    monthlyDataDashboard[mYear] -= t.amount;
+                    if(t.date < todayStr) profitBeforeToday -= t.amount;
+                }
+            });
+
+            let tempBal = initialCapital;
+            Object.keys(monthlyDataDashboard).sort().forEach(m => {
+                let mDep = deposits[m] || 0;
+                let sBal = tempBal + mDep;
+                let p = monthlyDataDashboard[m];
+                let w = (sBal >= 100000 && p > 0) ? p * 0.4 : 0;
+                totalWithdrawal += w;
+                tempBal = sBal + p - w;
+            });
+            
+            let totalAdded = 0;
+            for (let m in deposits) { totalAdded += deposits[m]; }
+            
+            // ยอดพอร์ตเรียลไทม์ (รวมไม้ที่เพิ่งกดไปวันนี้ด้วย ไว้โชว์ให้ชื่นใจ)
+            let currentBalance = initialCapital + totalAdded + netProfit - totalWithdrawal;
+            
+            // 💎 ยอดตั้งต้นของ "วันนี้" (ใช้สำหรับคำนวณขนาดไม้แบบล็อกเป้า ไม่สวิงตามรายไม้)
+            let startOfDayBalance = initialCapital + totalAdded + profitBeforeToday - totalWithdrawal;
+
+            // 2. เช็คเงื่อนไขเฟสความเสี่ยง 1 - 8 โดยอิงจาก "ยอดตั้งต้นของวันนี้"
+            let riskPct = 0;
+            let phaseName = "";
+            if (startOfDayBalance < 3500) { riskPct = 0.10; phaseName = "เฟส 1: เร่งเครื่อง"; }
+            else if (startOfDayBalance < 15000) { riskPct = 0.05; phaseName = "เฟส 2: สโนว์บอล"; }
+            else if (startOfDayBalance < 50000) { riskPct = 0.03; phaseName = "เฟส 3: เดินเครื่อง"; }
+            else if (startOfDayBalance < 100000) { riskPct = 0.015; phaseName = "เฟส 4: สไนเปอร์"; }
+            else if (startOfDayBalance < 500000) { riskPct = 0.01; phaseName = "เฟส 5: อิสระ"; }
+            else if (startOfDayBalance < 2000000) { riskPct = 0.0075; phaseName = "เฟส 6: ผจก.กองทุน"; }
+            else if (startOfDayBalance < 5000000) { riskPct = 0.005; phaseName = "เฟส 7: โหมดวาฬ"; }
+            else { riskPct = 0.0025; phaseName = "เฟส 8: เกษียณ"; }
+            
+            // 3. คำนวณจำนวนเงินที่ต้องกด
+            let tradeSize = startOfDayBalance * riskPct;
+            if (tradeSize < 30) tradeSize = 30; 
+            
+            // 4. อัปเดตตัวเลขแสดงผลขึ้นหน้าจอ
+            document.getElementById('currentBalanceText').innerText = currentBalance.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('currentPhaseText').innerText = `${phaseName} (เสี่ยง ${+(riskPct*100).toFixed(2)}%)`;
+            document.getElementById('todayTradeAmount').innerText = Math.floor(tradeSize).toLocaleString('th-TH') + ' ฿';
         }
 
         function renderHistory() {
@@ -435,67 +583,54 @@ int OnCalculate(const int rates_total, const int prev_calculated,
                 const dateParts = t.date.split('-');
                 const shortDate = `${dateParts[2]}/${dateParts[1]}`;
                 tr.innerHTML = `
-                    <td>${shortDate} <span style="color:#aaa; font-size:12px;">${t.time}</span></td>
+                    <td>${shortDate} <span style="color:var(--text-muted); font-size:12px;">${t.time}</span></td>
                     <td>${t.pair}</td>
                     <td class="${isWin ? 'win-text' : 'loss-text'}">${isWin ? 'WIN' : 'LOSS'}</td>
                     <td class="${isWin ? 'win-text' : 'loss-text'}">${isWin ? '+' : '-'}${t.amount}</td>
                     <td>
-                        <button class="action-btn" onclick="editTrade(${t.id})">✏️</button>
-                        <button class="action-btn" onclick="deleteTrade(${t.id})">🗑️</button>
+                        <button class="action-btn" onclick="editTrade(${t.id})" title="แก้ไข">✏️</button>
+                        <button class="action-btn" onclick="deleteTrade(${t.id})" title="ลบ">🗑️</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
-        // ระบบคำนวณรายเดือนแบบทบต้นข้ามเดือน + คัดแยกยอดถอนปันผลเมื่อทุนแตะแสน
         function renderMonthly() {
             const tbody = document.getElementById('monthlyBody');
             tbody.innerHTML = '';
 
             const monthlyData = {};
             trades.forEach(t => {
-                const monthYear = t.date.substring(0, 7); // YYYY-MM
+                const monthYear = t.date.substring(0, 7);
                 if(!monthlyData[monthYear]) monthlyData[monthYear] = { win: 0, loss: 0, profit: 0 };
                 if(t.result === 'WIN') { monthlyData[monthYear].win++; monthlyData[monthYear].profit += t.amount; }
                 else { monthlyData[monthYear].loss++; monthlyData[monthYear].profit -= t.amount; }
             });
 
-            // เรียงเดือนจากเก่าสุดไปใหม่สุด เพื่อคำนวณเงินทบข้ามเดือนให้ถูกต้องตามเส้นเวลา
             const sortedMonthsAsc = Object.keys(monthlyData).sort();
-
             let runningBalance = initialCapital;
             const monthlyRecords = [];
 
             sortedMonthsAsc.forEach(month => {
                 const data = monthlyData[month];
-                
-                // ดึงยอดเงินที่เติมในเดือนนี้ (ถ้ามี) มาบวกเพิ่มในทุนเริ่มเดือน
                 const monthDeposit = deposits[month] || 0;
                 const startBal = runningBalance + monthDeposit;
-
                 const netProfit = data.profit;
                 
                 let withdrawal = 0;
-                if (startBal >= 100000 && netProfit > 0) {
-                    withdrawal = netProfit * 0.40;
-                }
+                if (startBal >= 100000 && netProfit > 0) { withdrawal = netProfit * 0.40; }
                 
                 const reinvestedProfit = netProfit - withdrawal;
                 const endBal = startBal + reinvestedProfit;
-                
                 const total = data.win + data.loss;
                 const winRate = total > 0 ? ((data.win / total) * 100).toFixed(1) : 0;
 
-                monthlyRecords.push({
-                    month, startBal, monthDeposit, netProfit, withdrawal, endBal, total, winRate
-                });
-
+                monthlyRecords.push({ month, startBal, monthDeposit, netProfit, withdrawal, endBal, total, winRate });
                 runningBalance = endBal; 
             });
 
-            // สร้างแถวตาราง (อัปเดตให้มีคอลัมน์เงินเติม)
-            // คำนวณยอดทุนสะสมทั้งหมดเพื่อแสดงผล
+            // อัปเดตยอดทุนสะสมทั้งหมด
             let totalAdded = 0;
             for (let m in deposits) { totalAdded += deposits[m]; }
             let grandTotalCapital = initialCapital + totalAdded;
@@ -503,7 +638,7 @@ int OnCalculate(const int rates_total, const int prev_calculated,
             document.getElementById('totalCapitalDisplay').innerText = grandTotalCapital.toLocaleString('th-TH') + ' ฿';
             document.getElementById('totalCapitalBreakdown').innerText = ` (แรกเริ่ม ${initialCapital.toLocaleString('th-TH')} ฿ + เติมเพิ่ม ${totalAdded.toLocaleString('th-TH')} ฿)`;
 
-            // สร้างแถวตาราง (เพิ่มปุ่มดินสอ ✏️ สำหรับแก้ไข)
+            // สร้างตาราง
             monthlyRecords.reverse().forEach(r => {
                 const parts = r.month.split('-');
                 const monthDisplay = `${parts[1]}/${parts[0]}`;
@@ -514,17 +649,16 @@ int OnCalculate(const int rates_total, const int prev_calculated,
                     <td>${r.startBal.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ฿</td>
                     <td style="color: var(--warning); font-weight: bold;">
                         ${r.monthDeposit > 0 
-                            ? '+' + r.monthDeposit.toLocaleString('th-TH') + ' ฿ <span onclick="editDeposit(\'' + r.month + '\')" style="cursor:pointer; font-size:14px; opacity:0.8; margin-left:5px;" title="คลิกเพื่อแก้ไข">✏️</span>' 
-                            : '- <span onclick="editDeposit(\'' + r.month + '\')" style="cursor:pointer; font-size:14px; opacity:0.3; margin-left:5px;" title="คลิกเพื่อเพิ่มยอด">✏️</span>'}
+                            ? '+' + r.monthDeposit.toLocaleString('th-TH') + ' <span onclick="editDeposit(\'' + r.month + '\')" style="cursor:pointer; font-size:14px; opacity:0.8; margin-left:3px;" title="แก้ไขยอดเติม">✏️</span>' 
+                            : '- <span onclick="editDeposit(\'' + r.month + '\')" style="cursor:pointer; font-size:14px; opacity:0.3; margin-left:3px;" title="เพิ่มยอดเติม">✏️</span>'}
                     </td>
-                    <td style="font-weight:bold; color: ${r.netProfit > 0 ? '#00e676' : (r.netProfit < 0 ? '#ff5252' : 'white')}">
+                    <td style="font-weight:bold; color: ${r.netProfit > 0 ? 'var(--primary)' : (r.netProfit < 0 ? 'var(--danger)' : 'var(--text-color)')}">
                         ${r.netProfit > 0 ? '+' : ''}${r.netProfit.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ฿
                     </td>
-                    <td style="font-weight:bold; color: ${r.withdrawal > 0 ? 'var(--purple)' : '#777'}">
+                    <td style="font-weight:bold; color: ${r.withdrawal > 0 ? 'var(--purple)' : 'var(--text-muted)'}">
                         ${r.withdrawal > 0 ? '💸 ' + r.withdrawal.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ฿' : '-'}
                     </td>
                     <td style="font-weight:bold; color: var(--info);">${r.endBal.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ฿</td>
-                    <td>${r.winRate}% (${r.total} ไม้)</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -566,28 +700,31 @@ int OnCalculate(const int rates_total, const int prev_calculated,
                 document.getElementById('tradePair').value = trade.pair;
                 document.getElementById('tradeResult').value = trade.result;
                 document.getElementById('tradeAmount').value = trade.amount;
+                
                 document.getElementById('formTitle').innerText = '✏️ แก้ไขรายการเทรด';
-                document.getElementById('formTitle').style.color = '#ff9800';
                 const submitBtn = document.getElementById('submitBtn');
                 submitBtn.innerText = 'บันทึกการแก้ไข';
-                submitBtn.style.backgroundColor = '#ff9800';
+                submitBtn.style.background = 'var(--warning)';
+                submitBtn.style.color = '#000';
                 document.getElementById('cancelBtn').style.display = 'block';
+                
                 document.querySelector('.tab-btn:nth-child(1)').click();
-                window.scrollTo(0, 0);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
 
         function cancelEdit() {
             editModeId = null;
             document.getElementById('formTitle').innerText = 'บันทึกไม้เทรด';
-            document.getElementById('formTitle').style.color = 'white';
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.innerText = 'บันทึกออเดอร์';
-            submitBtn.style.backgroundColor = '#00e676';
+            submitBtn.style.background = 'var(--primary-gradient)';
+            submitBtn.style.color = '#fff';
             document.getElementById('cancelBtn').style.display = 'none';
             document.getElementById('tradeAmount').value = '';
             init();
         }
+
         function saveDeposit() {
             const monthVal = document.getElementById('depositMonth').value; 
             const amountVal = parseFloat(document.getElementById('depositAmount').value);
@@ -596,30 +733,28 @@ int OnCalculate(const int rates_total, const int prev_calculated,
             if(isNaN(amountVal) || amountVal < 0) { alert('กรุณาใส่จำนวนเงินที่ถูกต้อง'); return; }
             
             if (amountVal === 0) {
-                // ถ้ากรอก 0 ให้ลบข้อมูลเดือนนั้นทิ้งไปเลย
                 delete deposits[monthVal];
                 alert(`ลบยอดเติมเงินของเดือน ${monthVal} เรียบร้อยแล้ว`);
             } else {
                 deposits[monthVal] = amountVal;
                 alert(`บันทึกยอดเติมเงิน ${amountVal} ฿ สำหรับเดือน ${monthVal} สำเร็จ!`);
             }
-            
             localStorage.setItem('monthly_deposits_v2', JSON.stringify(deposits));
             document.getElementById('depositAmount').value = '';
             updateUI();
         }
 
-        // ฟังก์ชันดึงข้อมูลกลับมาแก้ไข
         function editDeposit(monthKey) {
             document.getElementById('depositMonth').value = monthKey;
             document.getElementById('depositAmount').value = deposits[monthKey] || '';
             document.getElementById('depositAmount').focus();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
+
         function copyMT5Code() {
             const codeText = document.getElementById('mt5CodeText').innerText;
             navigator.clipboard.writeText(codeText).then(() => {
-                alert('📋 ก๊อปปี้โค้ด MT5 ลงคลิปบอร์ดสำเร็จแล้ว! นำไปวางใน MetaEditor ได้เลย');
+                alert('📋 ก๊อปปี้โค้ดลงคลิปบอร์ดสำเร็จ!');
             }).catch(err => {
                 alert('ไม่สามารถก๊อปปี้อัตโนมัติได้ กรุณาคลุมดำคัดลอกในกล่องข้อความแทน');
             });
