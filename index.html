@@ -505,9 +505,24 @@ int OnCalculate(const int rates_total, const int prev_calculated,
             </div>
         </div>
     </div>
-    <script>
-        let trades = JSON.parse(localStorage.getItem('trade_history_v2')) || [];
+      <script>
+        let trades = [];
         let deposits = JSON.parse(localStorage.getItem('monthly_deposits_v2')) || {};
+        
+        async function fetchTradesFromServer() {
+            try {
+                const res = await fetch('https://mytradebot-cf165-default-rtdb.asia-southeast1.firebasedatabase.app/trades.json');
+                if(res.ok) {
+                    const data = await res.json();
+                    if(data) {
+                        trades = Object.values(data);
+                    } else {
+                        trades = [];
+                    }
+                    init();
+                }
+            } catch(e) { console.error(e); }
+        }
         let editModeId = null;
         let initialCapital = parseFloat(localStorage.getItem('initial_capital')) || 350;
 
@@ -793,14 +808,24 @@ int OnCalculate(const int rates_total, const int prev_calculated,
             const amountVal = document.getElementById('tradeAmount').value;
             if(!amountVal || amountVal <= 0) { alert('กรุณาใส่จำนวนเงินที่ถูกต้อง'); return; }
 
+            let tradeObj = {};
             if(editModeId) {
-                trades = trades.map(t => t.id === editModeId ? { ...t, date: dateVal, time: timeVal, pair: pairVal, result: resultVal, amount: parseFloat(amountVal) } : t);
+                tradeObj = { id: editModeId, date: dateVal, time: timeVal, pair: pairVal, result: resultVal, amount: parseFloat(amountVal) };
+                trades = trades.map(t => t.id === editModeId ? tradeObj : t);
                 cancelEdit();
             } else {
-                trades.push({ id: Date.now(), date: dateVal, time: timeVal, pair: pairVal, result: resultVal, amount: parseFloat(amountVal) });
+                tradeObj = { id: Date.now(), date: dateVal, time: timeVal, pair: pairVal, result: resultVal, amount: parseFloat(amountVal) };
+                trades.push(tradeObj);
                 document.getElementById('tradeAmount').value = '';
             }
-            localStorage.setItem('trade_history_v2', JSON.stringify(trades));
+            
+            // Save to Firebase
+            fetch('https://mytradebot-cf165-default-rtdb.asia-southeast1.firebasedatabase.app/trades/' + tradeObj.id + '.json', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(tradeObj)
+            }).catch(e => console.error(e));
+            
             updateUI();
         }
 
@@ -886,6 +911,7 @@ int OnCalculate(const int rates_total, const int prev_calculated,
         window.onclick = function(e) { if(e.target.classList.contains('modal')) e.target.style.display = 'none'; }
 
         init();
+        fetchTradesFromServer();
     </script>
 </body>
 </html>
