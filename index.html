@@ -513,7 +513,10 @@ int OnCalculate(const int rates_total, const int prev_calculated,
     </div>
       <script>
         let trades = [];
-        let deposits = JSON.parse(localStorage.getItem('monthly_deposits_v2')) || {};
+        let deposits = {
+            REAL: JSON.parse(localStorage.getItem('monthly_deposits_REAL')) || {},
+            PRACTICE: JSON.parse(localStorage.getItem('monthly_deposits_PRACTICE')) || {}
+        };
         
         async function fetchTradesFromServer() {
             try {
@@ -530,11 +533,15 @@ int OnCalculate(const int rates_total, const int prev_calculated,
             } catch(e) { console.error(e); }
         }
         let editModeId = null;
-        let initialCapital = parseFloat(localStorage.getItem('initial_capital')) || 350;
+        let initialCapital = {
+            REAL: parseFloat(localStorage.getItem('initial_capital_REAL')) || 350,
+            PRACTICE: parseFloat(localStorage.getItem('initial_capital_PRACTICE')) || 10000
+        };
         let currentAppMode = 'REAL';
 
         function changeAppMode() {
             currentAppMode = document.getElementById('appModeToggle').value;
+            document.getElementById('initialCapitalInput').value = initialCapital[currentAppMode];
             updateUI();
         }
 
@@ -566,7 +573,7 @@ int OnCalculate(const int rates_total, const int prev_calculated,
             const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
             document.getElementById('tradeDate').value = dateStr;
             document.getElementById('tradeTime').value = timeStr;
-            document.getElementById('initialCapitalInput').value = initialCapital;
+            document.getElementById('initialCapitalInput').value = initialCapital[currentAppMode];
             
             generateRoadmap6Years(); // เรียกใช้ฟังก์ชันตาราง 6 ปีตอนเปิดเว็บ
             updateUI();
@@ -621,8 +628,8 @@ int OnCalculate(const int rates_total, const int prev_calculated,
 
         function changeInitialCapital() {
             const val = document.getElementById('initialCapitalInput').value;
-            initialCapital = parseFloat(val) || 350;
-            localStorage.setItem('initial_capital', initialCapital);
+            initialCapital[currentAppMode] = parseFloat(val) || (currentAppMode === 'REAL' ? 350 : 10000);
+            localStorage.setItem('initial_capital_' + currentAppMode, initialCapital[currentAppMode]);
             updateUI();
         }
 
@@ -688,9 +695,9 @@ int OnCalculate(const int rates_total, const int prev_calculated,
                 }
             });
 
-            let tempBal = initialCapital;
+            let tempBal = initialCapital[currentAppMode];
             Object.keys(monthlyDataDashboard).sort().forEach(m => {
-                let mDep = deposits[m] || 0;
+                let mDep = deposits[currentAppMode][m] || 0;
                 let sBal = tempBal + mDep;
                 let p = monthlyDataDashboard[m];
                 let w = (sBal >= 100000 && p > 0) ? p * 0.4 : 0;
@@ -699,13 +706,13 @@ int OnCalculate(const int rates_total, const int prev_calculated,
             });
             
             let totalAdded = 0;
-            for (let m in deposits) { totalAdded += deposits[m]; }
+            for (let m in deposits[currentAppMode]) { totalAdded += deposits[currentAppMode][m]; }
             
             // ยอดพอร์ตเรียลไทม์ (รวมไม้ที่เพิ่งกดไปวันนี้ด้วย ไว้โชว์ให้ชื่นใจ)
-            let currentBalance = initialCapital + totalAdded + netProfit - totalWithdrawal;
+            let currentBalance = initialCapital[currentAppMode] + totalAdded + netProfit - totalWithdrawal;
             
             // 💎 ยอดตั้งต้นของ "วันนี้" (ใช้สำหรับคำนวณขนาดไม้แบบล็อกเป้า ไม่สวิงตามรายไม้)
-            let startOfDayBalance = initialCapital + totalAdded + profitBeforeToday - totalWithdrawal;
+            let startOfDayBalance = initialCapital[currentAppMode] + totalAdded + profitBeforeToday - totalWithdrawal;
 
             // 2. เช็คเงื่อนไขเฟสความเสี่ยง 1 - 8 โดยอิงจาก "ยอดตั้งต้นของวันนี้"
             let riskPct = 0;
@@ -767,12 +774,12 @@ int OnCalculate(const int rates_total, const int prev_calculated,
             });
 
             const sortedMonthsAsc = Object.keys(monthlyData).sort();
-            let runningBalance = initialCapital;
+            let runningBalance = initialCapital[currentAppMode];
             const monthlyRecords = [];
 
             sortedMonthsAsc.forEach(month => {
                 const data = monthlyData[month];
-                const monthDeposit = deposits[month] || 0;
+                const monthDeposit = deposits[currentAppMode][month] || 0;
                 const startBal = runningBalance + monthDeposit;
                 const netProfit = data.profit;
                 
@@ -790,11 +797,11 @@ int OnCalculate(const int rates_total, const int prev_calculated,
 
             // อัปเดตยอดทุนสะสมทั้งหมด
             let totalAdded = 0;
-            for (let m in deposits) { totalAdded += deposits[m]; }
-            let grandTotalCapital = initialCapital + totalAdded;
+            for (let m in deposits[currentAppMode]) { totalAdded += deposits[currentAppMode][m]; }
+            let grandTotalCapital = initialCapital[currentAppMode] + totalAdded;
             
             document.getElementById('totalCapitalDisplay').innerText = grandTotalCapital.toLocaleString('th-TH') + ' ฿';
-            document.getElementById('totalCapitalBreakdown').innerText = ` (แรกเริ่ม ${initialCapital.toLocaleString('th-TH')} ฿ + เติมเพิ่ม ${totalAdded.toLocaleString('th-TH')} ฿)`;
+            document.getElementById('totalCapitalBreakdown').innerText = ` (แรกเริ่ม ${initialCapital[currentAppMode].toLocaleString('th-TH')} ฿ + เติมเพิ่ม ${totalAdded.toLocaleString('th-TH')} ฿)`;
 
             // สร้างตาราง
             monthlyRecords.reverse().forEach(r => {
@@ -802,7 +809,6 @@ int OnCalculate(const int rates_total, const int prev_calculated,
                 const monthDisplay = `${parts[1]}/${parts[0]}`;
                 const tr = document.createElement('tr');
                 
-                // (วางทับโค้ด tr.innerHTML เดิมในฟังก์ชัน renderMonthly)
                 tr.innerHTML = `
                     <td data-label="เดือน"><strong>${monthDisplay}</strong></td>
                     <td data-label="ทุนเริ่มเดือน">${r.startBal.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ฿</td>
@@ -917,7 +923,7 @@ int OnCalculate(const int rates_total, const int prev_calculated,
 
         function editDeposit(monthKey) {
             document.getElementById('depositMonth').value = monthKey;
-            document.getElementById('depositAmount').value = deposits[monthKey] || '';
+            document.getElementById('depositAmount').value = deposits[currentAppMode][monthKey] || '';
             document.getElementById('depositAmount').focus();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
