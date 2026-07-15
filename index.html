@@ -201,7 +201,13 @@
 
     <div class="header-container">
         <h2>Pro</h2>
-        <button class="theme-btn" id="themeToggle" onclick="toggleTheme()">🌙 โหมดมืด</button>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <select id="appModeToggle" onchange="changeAppMode()" style="padding:6px 12px; margin:0; border-radius:20px; font-weight:bold; background:var(--primary); color:#fff; border:none; outline:none; font-size:14px; cursor:pointer;">
+                <option value="REAL">💰 บัญชีจริง</option>
+                <option value="PRACTICE">🎮 ทดลอง</option>
+            </select>
+            <button class="theme-btn" id="themeToggle" onclick="toggleTheme()">🌙 โหมดมืด</button>
+        </div>
     </div>
 
     <div class="btn-group">
@@ -525,6 +531,12 @@ int OnCalculate(const int rates_total, const int prev_calculated,
         }
         let editModeId = null;
         let initialCapital = parseFloat(localStorage.getItem('initial_capital')) || 350;
+        let currentAppMode = 'REAL';
+
+        function changeAppMode() {
+            currentAppMode = document.getElementById('appModeToggle').value;
+            updateUI();
+        }
 
         // ระบบ Dark/Light Mode
         function toggleTheme() {
@@ -625,11 +637,20 @@ int OnCalculate(const int rates_total, const int prev_calculated,
             renderDashboard();
             renderHistory();
             renderMonthly();
+            
+            // เปลี่ยนสีปุ่มตามโหมด
+            const modeSelect = document.getElementById('appModeToggle');
+            if (currentAppMode === 'REAL') {
+                modeSelect.style.background = 'var(--primary)';
+            } else {
+                modeSelect.style.background = 'var(--warning)';
+            }
         }
         
         function renderDashboard() {
             let win = 0, loss = 0, netProfit = 0;
-            trades.forEach(t => {
+            const filteredTrades = trades.filter(t => (t.mode || 'REAL') === currentAppMode);
+            filteredTrades.forEach(t => {
                 if(t.result === 'WIN') { win++; netProfit += t.amount; }
                 else { loss++; netProfit -= t.amount; }
             });
@@ -711,7 +732,8 @@ int OnCalculate(const int rates_total, const int prev_calculated,
         function renderHistory() {
             const tbody = document.getElementById('historyBody');
             tbody.innerHTML = '';
-            const sortedTrades = [...trades].sort((a, b) => b.id - a.id);
+            const filteredTrades = trades.filter(t => (t.mode || 'REAL') === currentAppMode);
+            const sortedTrades = [...filteredTrades].sort((a, b) => b.id - a.id);
             sortedTrades.forEach(t => {
                 const tr = document.createElement('tr');
                 const isWin = t.result === 'WIN';
@@ -736,7 +758,8 @@ int OnCalculate(const int rates_total, const int prev_calculated,
             tbody.innerHTML = '';
 
             const monthlyData = {};
-            trades.forEach(t => {
+            const filteredTrades = trades.filter(t => (t.mode || 'REAL') === currentAppMode);
+            filteredTrades.forEach(t => {
                 const monthYear = t.date.substring(0, 7);
                 if(!monthlyData[monthYear]) monthlyData[monthYear] = { win: 0, loss: 0, profit: 0 };
                 if(t.result === 'WIN') { monthlyData[monthYear].win++; monthlyData[monthYear].profit += t.amount; }
@@ -810,11 +833,11 @@ int OnCalculate(const int rates_total, const int prev_calculated,
 
             let tradeObj = {};
             if(editModeId) {
-                tradeObj = { id: editModeId, date: dateVal, time: timeVal, pair: pairVal, result: resultVal, amount: parseFloat(amountVal) };
+                tradeObj = { id: editModeId, date: dateVal, time: timeVal, pair: pairVal, result: resultVal, amount: parseFloat(amountVal), mode: currentAppMode };
                 trades = trades.map(t => t.id === editModeId ? tradeObj : t);
                 cancelEdit();
             } else {
-                tradeObj = { id: Date.now(), date: dateVal, time: timeVal, pair: pairVal, result: resultVal, amount: parseFloat(amountVal) };
+                tradeObj = { id: Date.now(), date: dateVal, time: timeVal, pair: pairVal, result: resultVal, amount: parseFloat(amountVal), mode: currentAppMode };
                 trades.push(tradeObj);
                 document.getElementById('tradeAmount').value = '';
             }
@@ -832,7 +855,9 @@ int OnCalculate(const int rates_total, const int prev_calculated,
         function deleteTrade(id) {
             if(confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?')) {
                 trades = trades.filter(t => t.id !== id);
-                localStorage.setItem('trade_history_v2', JSON.stringify(trades));
+                fetch('https://mytradebot-cf165-default-rtdb.asia-southeast1.firebasedatabase.app/trades/' + id + '.json', {
+                    method: 'DELETE'
+                }).catch(e => console.error(e));
                 updateUI();
             }
         }
